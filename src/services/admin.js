@@ -43,11 +43,66 @@ export const adminService = {
   },
 
   // --- Rates Management ---
-  getRates: () => {
+  getRates: async () => {
+    if (FEATURES.USE_SUPABASE_AUTH) {
+      const { data, error } = await supabase.from('rates').select('*');
+      if (error) throw new Error(error.message);
+      
+      const rates = {
+        mixedPaper: null, cardboard: null, whitePaper: null,
+        mixedPaperSell: null, cardboardSell: null, whitePaperSell: null,
+        moq: null
+      };
+      
+      data.forEach(row => {
+        if (row.paper_type === 'mixedPaper') {
+          rates.mixedPaper = row.buy_rate !== null ? Number(row.buy_rate) : null;
+          rates.mixedPaperSell = row.sell_rate !== null ? Number(row.sell_rate) : null;
+          rates.moq = row.moq !== null ? Number(row.moq) : null;
+        } else if (row.paper_type === 'cardboard') {
+          rates.cardboard = row.buy_rate !== null ? Number(row.buy_rate) : null;
+          rates.cardboardSell = row.sell_rate !== null ? Number(row.sell_rate) : null;
+          if (row.moq !== null) rates.moq = Number(row.moq);
+        } else if (row.paper_type === 'whitePaper') {
+          rates.whitePaper = row.buy_rate !== null ? Number(row.buy_rate) : null;
+          rates.whitePaperSell = row.sell_rate !== null ? Number(row.sell_rate) : null;
+          if (row.moq !== null) rates.moq = Number(row.moq);
+        }
+      });
+      return rates;
+    }
     return db.getRates();
   },
 
-  updateRates: (ratesData) => {
+  updateRates: async (ratesData) => {
+    if (FEATURES.USE_SUPABASE_AUTH) {
+      const moq = ratesData.moq !== null ? parseFloat(ratesData.moq) : null;
+      const rows = [
+        {
+          paper_type: 'mixedPaper',
+          buy_rate: ratesData.mixedPaper !== null ? parseFloat(ratesData.mixedPaper) : null,
+          sell_rate: ratesData.mixedPaperSell !== null ? parseFloat(ratesData.mixedPaperSell) : null,
+          moq
+        },
+        {
+          paper_type: 'cardboard',
+          buy_rate: ratesData.cardboard !== null ? parseFloat(ratesData.cardboard) : null,
+          sell_rate: ratesData.cardboardSell !== null ? parseFloat(ratesData.cardboardSell) : null,
+          moq
+        },
+        {
+          paper_type: 'whitePaper',
+          buy_rate: ratesData.whitePaper !== null ? parseFloat(ratesData.whitePaper) : null,
+          sell_rate: ratesData.whitePaperSell !== null ? parseFloat(ratesData.whitePaperSell) : null,
+          moq
+        }
+      ];
+      
+      const { error } = await supabase.from('rates').upsert(rows, { onConflict: 'paper_type' });
+      if (error) throw new Error(error.message);
+      return adminService.getRates();
+    }
+    
     db.saveRates({
       mixedPaper: ratesData.mixedPaper !== null ? parseFloat(ratesData.mixedPaper) : null,
       cardboard: ratesData.cardboard !== null ? parseFloat(ratesData.cardboard) : null,
@@ -61,11 +116,132 @@ export const adminService = {
   },
 
   // --- Pickups Lifecycle Management ---
-  getPickups: () => {
+  getPickups: async () => {
+    if (FEATURES.USE_SUPABASE_AUTH) {
+      const { data, error } = await supabase
+        .from('pickups')
+        .select(`*, schools:school_id (name)`)
+        .order('created_at', { ascending: false });
+      if (error) throw new Error(error.message);
+      return data.map(p => ({
+        id: p.id,
+        schoolId: p.school_id,
+        schoolName: p.schools?.name || 'Unknown School',
+        paperType: p.paper_type,
+        estimatedWeight: p.estimated_weight,
+        actualWeight: p.actual_weight,
+        rate: p.rate,
+        amount: p.amount,
+        status: p.status,
+        requestDate: p.request_date || p.created_at,
+        scheduledDate: p.scheduled_date,
+        completedDate: p.completed_date,
+        paidDate: p.paid_date
+      }));
+    }
     return db.getPickups();
   },
 
-  updatePickupStatus: (pickupId, nextStatus, extraData = {}) => {
+  updatePickupStatus: async (pickupId, nextStatus, extraData = {}) => {
+    if (FEATURES.USE_SUPABASE_AUTH) {
+      const { data: pickup, error: fetchError } = await supabase
+        .from('pickups')
+        .select('*, schools:school_id (name)')
+        .eq('id', pickupId)
+        .single();
+      if (fetchError || !pickup) throw new Error('Pickup not found.');
+
+      const currentStatus = pickup.status;
+      const valid = validateTransition(currentStatus, nextStatus);
+      if (!valid) throw new Error(`Invalid status transition from ${currentStatus} to ${nextStatus}`);
+
+      const updates = { status: nextStatus };
+
+      if (nextStatus === 'scheduled') {
+        if (!extraData.scheduledDate) throw new Error('Scheduled date is required.');
+        updates.scheduled_date = extraData.scheduledDate;
+      }
+
+      if (nextStatus === 'completed') {
+        const { actualWeight, paperType, rate } = extraData;
+        if (actualWeight === undefined || actualWeight === null || actualWeight <= 0) {
+          throw new Error('Valid actual weight is required.');
+        }
+        if (!paperType) throw new Error('Paper type is required.');
+        if (rate === undefined || rate === null || rate < 0) {
+          throw new Error('Valid rate is required.');
+        }
+
+        updates.actual_weight = parseFloat(actualWeight);
+        updates.paper_type = paperType;
+        updates.rate = parseFloat(rate);
+        updates.amount = updates.actual_weight * updates.rate;
+        updates.completed_date = new Date().toISOString();
+
+        // 1. Fetch current inventory to increment
+        const { data: invData } = await supabase
+          .from('inventory')
+          .select('quantity')
+          .eq('paper_type', paperType)
+          .single();
+        
+        const currentQty = invData ? parseFloat(invData.quantity) : 0;
+        await supabase
+          .from('inventory')
+          .upsert({ paper_type: paperType, quantity: currentQty + updates.actual_weight });
+
+        // 2. Add inventory transaction
+        await supabase
+          .from('inventory_transactions')
+          .insert({
+            paper_type: paperType,
+            quantity: updates.actual_weight,
+            movement_type: 'in',
+            reference_id: pickupId,
+            notes: `School Pickup completed from ${pickup.schools?.name}`
+          });
+
+        // 3. Add payment
+        await supabase
+          .from('payments')
+          .insert({
+            pickup_id: pickupId,
+            school_id: pickup.school_id,
+            amount: updates.amount,
+            status: 'pending'
+          });
+      }
+
+      if (nextStatus === 'paid') {
+        updates.paid_date = new Date().toISOString();
+      }
+
+      const { data: updatedData, error: updateError } = await supabase
+        .from('pickups')
+        .update(updates)
+        .eq('id', pickupId)
+        .select(`*, schools:school_id (name)`)
+        .single();
+        
+      if (updateError) throw new Error(updateError.message);
+      
+      return {
+        id: updatedData.id,
+        schoolId: updatedData.school_id,
+        schoolName: updatedData.schools?.name || 'Unknown School',
+        paperType: updatedData.paper_type,
+        estimatedWeight: updatedData.estimated_weight,
+        actualWeight: updatedData.actual_weight,
+        rate: updatedData.rate,
+        amount: updatedData.amount,
+        status: updatedData.status,
+        requestDate: updatedData.request_date || updatedData.created_at,
+        scheduledDate: updatedData.scheduled_date,
+        completedDate: updatedData.completed_date,
+        paidDate: updatedData.paid_date
+      };
+    }
+
     const pickups = db.getPickups();
     const index = pickups.findIndex(p => p.id === pickupId);
     if (index === -1) throw new Error('Pickup not found.');

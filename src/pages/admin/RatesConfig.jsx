@@ -17,18 +17,22 @@ export const RatesConfig = () => {
   const [currentRates, setCurrentRates] = React.useState(null);
 
   const loadRates = async () => {
-    const r = adminService.getRates();
-    setCurrentRates(r);
-    if (r) {
-      setRates({
-        mixedPaper: r.mixedPaper !== null ? r.mixedPaper : '',
-        cardboard: r.cardboard !== null ? r.cardboard : '',
-        whitePaper: r.whitePaper !== null ? r.whitePaper : '',
-        mixedPaperSell: r.mixedPaperSell !== null ? r.mixedPaperSell : '',
-        cardboardSell: r.cardboardSell !== null ? r.cardboardSell : '',
-        whitePaperSell: r.whitePaperSell !== null ? r.whitePaperSell : '',
-        moq: r.moq !== null ? r.moq : ''
-      });
+    try {
+      const r = await adminService.getRates();
+      setCurrentRates(r);
+      if (r) {
+        setRates({
+          mixedPaper: r.mixedPaper !== null ? r.mixedPaper : '',
+          cardboard: r.cardboard !== null ? r.cardboard : '',
+          whitePaper: r.whitePaper !== null ? r.whitePaper : '',
+          mixedPaperSell: r.mixedPaperSell !== null ? r.mixedPaperSell : '',
+          cardboardSell: r.cardboardSell !== null ? r.cardboardSell : '',
+          whitePaperSell: r.whitePaperSell !== null ? r.whitePaperSell : '',
+          moq: r.moq !== null ? r.moq : ''
+        });
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -43,12 +47,12 @@ export const RatesConfig = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSuccess(false);
 
     try {
-      adminService.updateRates({
+      await adminService.updateRates({
         mixedPaper: rates.mixedPaper === '' ? null : parseFloat(rates.mixedPaper),
         cardboard: rates.cardboard === '' ? null : parseFloat(rates.cardboard),
         whitePaper: rates.whitePaper === '' ? null : parseFloat(rates.whitePaper),
@@ -58,7 +62,7 @@ export const RatesConfig = () => {
         moq: rates.moq === '' ? null : parseFloat(rates.moq)
       });
       setSuccess(true);
-      loadRates();
+      await loadRates();
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       alert(err.message);

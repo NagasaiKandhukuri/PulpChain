@@ -10,8 +10,12 @@ import { Scale, Milestone, PiggyBank, Calendar, Clock, AlertTriangle, ShieldChec
 
 export const SchoolDashboard = () => {
   const { user } = useAuth();
-  const rates = adminService.getRates();
+  const [rates, setRates] = useState(null);
   const [school, setSchool] = useState(null);
+
+  useEffect(() => {
+    adminService.getRates().then(setRates).catch(console.error);
+  }, []);
 
   useEffect(() => {
     if (user?.id) {

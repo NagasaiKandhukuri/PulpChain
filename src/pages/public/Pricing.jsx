@@ -5,7 +5,11 @@ import { ShieldAlert, Info, Scale, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Pricing = () => {
-  const rates = adminService.getRates();
+  const [rates, setRates] = React.useState(null);
+
+  React.useEffect(() => {
+    adminService.getRates().then(setRates).catch(console.error);
+  }, []);
 
   // Determine if rates are configured
   const isConfigured = rates && 

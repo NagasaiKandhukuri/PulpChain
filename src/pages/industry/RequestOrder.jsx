@@ -10,7 +10,7 @@ import { ShoppingCart, AlertTriangle, ShieldCheck } from 'lucide-react';
 export const RequestOrder = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const rates = adminService.getRates();
+  const [rates, setRates] = React.useState(null);
   const inventory = adminService.getInventory();
 
   const [paperType, setPaperType] = React.useState('mixedPaper');
@@ -25,14 +25,18 @@ export const RequestOrder = () => {
   React.useEffect(() => {
     const loadAddress = async () => {
       try {
-        const industriesData = await adminService.getIndustries();
+        const [industriesData, ratesData] = await Promise.all([
+          adminService.getIndustries(),
+          adminService.getRates()
+        ]);
         const industries = Array.isArray(industriesData) ? industriesData : [];
         const ind = industries.find(i => i.id === user?.id);
         if (ind) {
           setDeliveryAddress(ind.address || '');
         }
+        setRates(ratesData);
       } catch (err) {
-        console.error('Failed to load address:', err);
+        console.error('Failed to load data:', err);
       }
     };
     if (user?.id) loadAddress();
@@ -73,9 +77,9 @@ export const RequestOrder = () => {
       <div style={{ maxWidth: '600px', margin: '40px auto' }} className="card">
         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '20px' }}>
           <AlertTriangle size={48} style={{ color: 'var(--warning)' }} />
-          <h2>Order System Offline</h2>
+          <h2>{rates ? "Order System Offline" : "Loading Configuration..."}</h2>
           <p style={{ color: 'var(--text-muted)' }}>
-            Selling rate parameters have not been finalized by the operations team. Standard ordering is temporarily locked.
+            {rates ? "Selling rate parameters have not been finalized by the operations team. Standard ordering is temporarily locked." : "Loading rates configuration from server..."}
           </p>
           <Link to="/industry/dashboard" className="btn btn-secondary" style={{ marginTop: '12px' }}>Return to Dashboard</Link>
         </div>

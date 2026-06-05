@@ -5,7 +5,11 @@ import { formatINR } from '../../components/Layout';
 import { adminService } from '../../services/admin';
 
 export const Home = () => {
-  const rates = adminService.getRates();
+  const [rates, setRates] = React.useState(null);
+
+  React.useEffect(() => {
+    adminService.getRates().then(setRates).catch(console.error);
+  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '80px' }}>

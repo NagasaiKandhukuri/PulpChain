@@ -22,6 +22,18 @@ export const schoolService = {
       schoolName = school.name;
     }
 
+    if (FEATURES.USE_SUPABASE_AUTH) {
+      const { data: newPickup, error } = await supabase.from('pickups').insert([{
+        school_id: schoolId,
+        paper_type: paperType,
+        estimated_weight: parseFloat(estimatedWeight),
+        status: 'pending'
+      }]).select().single();
+      
+      if (error) throw new Error(error.message);
+      return newPickup;
+    }
+
     const newPickup = {
       id: 'pk_' + Math.random().toString(36).substr(2, 9),
       schoolId: schoolId,
@@ -43,7 +55,33 @@ export const schoolService = {
   },
 
   // Get school's pickups
-  getPickups: (schoolId) => {
+  getPickups: async (schoolId) => {
+    if (FEATURES.USE_SUPABASE_AUTH) {
+      const { data, error } = await supabase
+        .from('pickups')
+        .select(`*, schools:school_id (name)`)
+        .eq('school_id', schoolId)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw new Error(error.message);
+      
+      // Transform snake_case to camelCase
+      return data.map(p => ({
+        id: p.id,
+        schoolId: p.school_id,
+        schoolName: p.schools?.name || 'Unknown School',
+        paperType: p.paper_type,
+        estimatedWeight: p.estimated_weight,
+        actualWeight: p.actual_weight,
+        rate: p.rate,
+        amount: p.amount,
+        status: p.status,
+        requestDate: p.request_date || p.created_at,
+        scheduledDate: p.scheduled_date,
+        completedDate: p.completed_date,
+        paidDate: p.paid_date
+      }));
+    }
     const pickups = db.getPickups();
     return pickups.filter(p => p.schoolId === schoolId);
   },

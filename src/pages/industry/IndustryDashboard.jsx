@@ -10,13 +10,18 @@ import { Box, FileText, ShoppingBag, Weight, Clock, AlertTriangle, ShieldCheck, 
 export const IndustryDashboard = () => {
   const { user } = useAuth();
   const [industries, setIndustries] = useState([]);
+  const [rates, setRates] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const industriesData = await adminService.getIndustries();
+        const [industriesData, ratesData] = await Promise.all([
+          adminService.getIndustries(),
+          adminService.getRates()
+        ]);
         setIndustries(Array.isArray(industriesData) ? industriesData : []);
+        setRates(ratesData);
       } finally {
         setLoading(false);
       }
@@ -24,7 +29,6 @@ export const IndustryDashboard = () => {
     loadData();
   }, []);
 
-  const rates = adminService.getRates();
   const inventory = adminService.getInventory();
   
   const industry = industries.find(i => i.id === user?.id) || {};

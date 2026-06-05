@@ -26,19 +26,27 @@ export const PickupsList = () => {
   const paymentDialogRef = React.useRef(null);
 
   const loadData = async () => {
-    setPickups(adminService.getPickups().reverse());
-    setPayments(adminService.getPayments().reverse());
-    setRates(adminService.getRates());
+    try {
+      const [pickupsData, ratesData] = await Promise.all([
+        adminService.getPickups(),
+        adminService.getRates()
+      ]);
+      setPickups(Array.isArray(pickupsData) ? pickupsData : []);
+      setPayments(adminService.getPayments().reverse());
+      setRates(ratesData);
+    } catch (err) {
+      console.error('Failed to load data:', err);
+    }
   };
 
   React.useEffect(() => {
     loadData();
   }, []);
 
-  const handleStatusTransition = (id, nextStatus, extra = {}) => {
+  const handleStatusTransition = async (id, nextStatus, extra = {}) => {
     try {
-      adminService.updatePickupStatus(id, nextStatus, extra);
-      loadData();
+      await adminService.updatePickupStatus(id, nextStatus, extra);
+      await loadData();
     } catch (err) {
       alert(err.message);
     }

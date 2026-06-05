@@ -10,7 +10,11 @@ import { formatINR } from '../../components/Layout';
 export const RequestPickup = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const rates = adminService.getRates();
+  const [rates, setRates] = React.useState(null);
+
+  React.useEffect(() => {
+    adminService.getRates().then(setRates).catch(console.error);
+  }, []);
 
   const [paperType, setPaperType] = React.useState('mixedPaper');
   const [estimatedWeight, setEstimatedWeight] = React.useState('');
@@ -51,9 +55,9 @@ export const RequestPickup = () => {
       <div style={{ maxWidth: '600px', margin: '40px auto' }} className="card">
         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '20px' }}>
           <AlertTriangle size={48} style={{ color: 'var(--warning)' }} />
-          <h2>Pickup System Temporarily Locked</h2>
+          <h2>{rates ? "Pickup System Temporarily Locked" : "Loading Configuration..."}</h2>
           <p style={{ color: 'var(--text-muted)' }}>
-            The logistics team has not finalized rates for this period. Pickup requests will be unlocked once rates are configured.
+            {rates ? "The logistics team has not finalized rates for this period. Pickup requests will be unlocked once rates are configured." : "Loading rates configuration from server..."}
           </p>
           <Link to="/school/dashboard" className="btn btn-secondary" style={{ marginTop: '12px' }}>Return to Dashboard</Link>
         </div>

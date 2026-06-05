@@ -8,7 +8,19 @@ import { Link } from 'react-router-dom';
 
 export const SchoolPickups = () => {
   const { user } = useAuth();
-  const pickups = schoolService.getPickups(user.id).reverse(); // Newest first
+  const [pickups, setPickups] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (user?.id) {
+      schoolService.getPickups(user.id)
+        .then(data => setPickups(Array.isArray(data) ? data.reverse() : []))
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    }
+  }, [user?.id]);
+
+  if (loading) return <div>Loading history...</div>;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>

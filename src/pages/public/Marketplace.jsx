@@ -8,16 +8,21 @@ import { LayoutGrid, AlertCircle, Scale, ShieldCheck, Users, ShoppingBag } from 
 export const Marketplace = () => {
   const [schools, setSchools] = useState([]);
   const [industries, setIndustries] = useState([]);
+  const [rates, setRates] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const schoolsData = await adminService.getSchools();
-        const industriesData = await adminService.getIndustries();
+        const [schoolsData, industriesData, ratesData] = await Promise.all([
+          adminService.getSchools(),
+          adminService.getIndustries(),
+          adminService.getRates()
+        ]);
 
         setSchools(Array.isArray(schoolsData) ? schoolsData : []);
         setIndustries(Array.isArray(industriesData) ? industriesData : []);
+        setRates(ratesData);
       } finally {
         setLoading(false);
       }
@@ -25,7 +30,6 @@ export const Marketplace = () => {
     loadData();
   }, []);
 
-  const rates = adminService.getRates();
   const inventory = adminService.getInventory();
   const summary = financeService.getFinancialSummary();
   const orders = adminService.getOrders();
