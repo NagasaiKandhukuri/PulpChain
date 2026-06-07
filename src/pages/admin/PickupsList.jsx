@@ -27,12 +27,13 @@ export const PickupsList = () => {
 
   const loadData = async () => {
     try {
-      const [pickupsData, ratesData] = await Promise.all([
+      const [pickupsData, ratesData, paymentsData] = await Promise.all([
         adminService.getPickups(),
-        adminService.getRates()
+        adminService.getRates(),
+        adminService.getPayments()
       ]);
       setPickups(Array.isArray(pickupsData) ? pickupsData : []);
-      setPayments(adminService.getPayments().reverse());
+      setPayments(Array.isArray(paymentsData) ? [...paymentsData].reverse() : []);
       setRates(ratesData);
     } catch (err) {
       console.error('Failed to load data:', err);

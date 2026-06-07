@@ -6,14 +6,27 @@ import { formatINR } from '../../components/Layout';
 import { CheckSquare, Square, Shield, Scale, PlusCircle, LayoutGrid, Users, Truck, DollarSign } from 'lucide-react';
 
 export const AdminDashboard = () => {
+  const [pickups, setPickups] = useState([]);
   const [schools, setSchools] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const schoolsData = await adminService.getSchools();
+        const [schoolsData, pickupsData, summaryData] = await Promise.all([
+          adminService.getSchools().catch(e => { console.error('Schools error', e); return []; }),
+          adminService.getPickups().catch(e => { console.error('Pickups error', e); return []; }),
+          financeService.getFinancialSummary().catch(e => { console.error('Finance error', e); return null; })
+        ]);
         setSchools(Array.isArray(schoolsData) ? schoolsData : []);
+        setPickups(Array.isArray(pickupsData) ? pickupsData : []);
+        setSummary(summaryData || {});
+      } catch (e) {
+        console.error('Dashboard error:', e);
+        setSchools([]);
+        setPickups([]);
+        setSummary({});
       } finally {
         setLoading(false);
       }
@@ -21,12 +34,13 @@ export const AdminDashboard = () => {
     loadData();
   }, []);
 
-  const status = adminService.getOnboardingStatus();
-  const summary = financeService.getFinancialSummary();
-  const pickups = adminService.getPickups();
+  const status = adminService.getOnboardingStatus() || {};
 
-  const activePickupsCount = pickups.filter(p => !['completed', 'paid', 'cancelled'].includes(p.status)).length;
-  const pendingRegistrationsCount = schools.filter(s => s.status === 'pending').length;
+  const safePickups = Array.isArray(pickups) ? pickups : [];
+  const safeSchools = Array.isArray(schools) ? schools : [];
+
+  const activePickupsCount = safePickups.filter(p => p && !['completed', 'paid', 'cancelled'].includes(p.status)).length;
+  const pendingRegistrationsCount = safeSchools.filter(s => s && s.status === 'pending').length;
 
   if (loading) return <div>Loading dashboard data...</div>;
 
@@ -116,7 +130,7 @@ export const AdminDashboard = () => {
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>NET REVENUE</span>
           <h2 style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--success)' }}>
-            {formatINR(summary.revenue)}
+            {formatINR(summary?.revenue || 0)}
           </h2>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>from commercial sales</span>
         </div>
@@ -124,7 +138,7 @@ export const AdminDashboard = () => {
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>TOTAL PAYOUTS</span>
           <h2 style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--danger)' }}>
-            {formatINR(summary.expenses)}
+            {formatINR(summary?.expenses || 0)}
           </h2>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>paid to schools</span>
         </div>

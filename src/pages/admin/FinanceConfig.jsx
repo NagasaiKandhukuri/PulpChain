@@ -28,7 +28,17 @@ ChartJS.register(
 );
 
 export const FinanceConfig = () => {
-  const summary = financeService.getFinancialSummary();
+  const [summary, setSummary] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    financeService.getFinancialSummary()
+      .then(data => setSummary(data || {}))
+      .catch(e => { console.error('Finance error', e); setSummary({}); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div>Loading financial data...</div>;
 
   // Chart data config
   const financialChartData = {
@@ -36,21 +46,21 @@ export const FinanceConfig = () => {
     datasets: [
       {
         label: 'Revenue (Sales)',
-        data: [summary.revenue],
+        data: [summary?.revenue || 0],
         backgroundColor: 'rgba(16, 185, 129, 0.7)',
         borderColor: 'rgb(16, 185, 129)',
         borderWidth: 1,
       },
       {
         label: 'Expenses (School Payouts)',
-        data: [summary.expenses],
+        data: [summary?.expenses || 0],
         backgroundColor: 'rgba(239, 68, 68, 0.7)',
         borderColor: 'rgb(239, 68, 68)',
         borderWidth: 1,
       },
       {
         label: 'Net Profit',
-        data: [summary.netProfit],
+        data: [summary?.netProfit || 0],
         backgroundColor: 'rgba(59, 130, 246, 0.7)',
         borderColor: 'rgb(59, 130, 246)',
         borderWidth: 1,
@@ -63,14 +73,14 @@ export const FinanceConfig = () => {
     datasets: [
       {
         label: 'Purchased Weight',
-        data: [summary.purchasedKg],
+        data: [summary?.purchasedKg || 0],
         backgroundColor: 'rgba(245, 158, 11, 0.7)',
         borderColor: 'rgb(245, 158, 11)',
         borderWidth: 1,
       },
       {
         label: 'Sold Weight',
-        data: [summary.soldKg],
+        data: [summary?.soldKg || 0],
         backgroundColor: 'rgba(16, 185, 129, 0.7)',
         borderColor: 'rgb(16, 185, 129)',
         borderWidth: 1,
@@ -84,7 +94,7 @@ export const FinanceConfig = () => {
     datasets: [
       {
         label: 'Net Profit Trend (₹)',
-        data: [0, summary.netProfit],
+        data: [0, summary?.netProfit || 0],
         borderColor: 'rgb(16, 185, 129)',
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
         borderWidth: 2,
@@ -123,19 +133,19 @@ export const FinanceConfig = () => {
       <div className="grid-cols-4">
         <div className="card">
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>REVENUE</span>
-          <h2 style={{ color: 'var(--success)', marginTop: '4px' }}>{formatINR(summary.revenue)}</h2>
+          <h2 style={{ color: 'var(--success)', marginTop: '4px' }}>{formatINR(summary?.revenue || 0)}</h2>
         </div>
         <div className="card">
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>EXPENSES</span>
-          <h2 style={{ color: 'var(--danger)', marginTop: '4px' }}>{formatINR(summary.expenses)}</h2>
+          <h2 style={{ color: 'var(--danger)', marginTop: '4px' }}>{formatINR(summary?.expenses || 0)}</h2>
         </div>
         <div className="card">
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>NET PROFIT</span>
-          <h2 style={{ color: 'var(--info)', marginTop: '4px' }}>{formatINR(summary.netProfit)}</h2>
+          <h2 style={{ color: 'var(--info)', marginTop: '4px' }}>{formatINR(summary?.netProfit || 0)}</h2>
         </div>
         <div className="card">
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>GROSS MARGIN %</span>
-          <h2 style={{ color: 'var(--success)', marginTop: '4px' }}>{summary.grossMarginPct.toFixed(1)}%</h2>
+          <h2 style={{ color: 'var(--success)', marginTop: '4px' }}>{(summary?.grossMarginPct || 0).toFixed(1)}%</h2>
         </div>
       </div>
 
@@ -143,15 +153,15 @@ export const FinanceConfig = () => {
       <div className="grid-cols-3">
         <div className="card">
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>TOTAL INVENTORY VALUE</span>
-          <h3 style={{ marginTop: '4px' }}>{formatINR(summary.inventoryValue)}</h3>
+          <h3 style={{ marginTop: '4px' }}>{formatINR(summary?.inventoryValue || 0)}</h3>
         </div>
         <div className="card">
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>TOTAL PROCURED (KG)</span>
-          <h3 style={{ marginTop: '4px' }}>{summary.purchasedKg} kg</h3>
+          <h3 style={{ marginTop: '4px' }}>{summary?.purchasedKg || 0} kg</h3>
         </div>
         <div className="card">
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>TOTAL SOLD (KG)</span>
-          <h3 style={{ marginTop: '4px' }}>{summary.soldKg} kg</h3>
+          <h3 style={{ marginTop: '4px' }}>{summary?.soldKg || 0} kg</h3>
         </div>
       </div>
 
@@ -191,7 +201,7 @@ export const FinanceConfig = () => {
           <div>
             <strong>Purchased Weight (Total)</strong>
             <p style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '4px' }}>
-              {summary.purchasedKg} kg
+              {summary?.purchasedKg || 0} kg
             </p>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Total weight cleared by logistics</span>
           </div>
@@ -199,7 +209,7 @@ export const FinanceConfig = () => {
           <div>
             <strong>Sold Weight (Total)</strong>
             <p style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '4px' }}>
-              {summary.soldKg} kg
+              {summary?.soldKg || 0} kg
             </p>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Total processed weight shipped to buyers</span>
           </div>
@@ -207,7 +217,7 @@ export const FinanceConfig = () => {
           <div>
             <strong>Operational Leverage</strong>
             <p style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary)', marginTop: '4px' }}>
-              {summary.purchasedKg > 0 ? ((summary.soldKg / summary.purchasedKg) * 100).toFixed(1) : 0}%
+              {(summary?.purchasedKg || 0) > 0 ? (((summary?.soldKg || 0) / summary.purchasedKg) * 100).toFixed(1) : 0}%
             </p>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Ratio of sold materials vs purchased cargo</span>
           </div>

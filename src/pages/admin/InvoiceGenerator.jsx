@@ -30,7 +30,8 @@ export const InvoiceGenerator = () => {
 
   const loadData = async () => {
     // Receipts are generated from completed/paid pickups
-    const allPickups = adminService.getPickups().reverse();
+    const pickupsData = await adminService.getPickups();
+    const allPickups = (Array.isArray(pickupsData) ? pickupsData : []).reverse();
     const completedOrPaid = allPickups.filter(p => p.status === 'completed' || p.status === 'paid');
     setPickups(completedOrPaid);
     

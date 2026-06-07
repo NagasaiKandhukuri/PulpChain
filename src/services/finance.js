@@ -1,5 +1,7 @@
 import { db } from './db';
 
+import { adminService } from './admin';
+
 export const financeService = {
   // Get sales ledger
   getSales: () => {
@@ -7,12 +9,36 @@ export const financeService = {
   },
 
   // Compute operational overview summaries in INR (₹)
-  getFinancialSummary: () => {
+  getFinancialSummary: async () => {
     const sales = db.getSales();
-    const payments = db.getPayments();
-    const pickups = db.getPickups();
-    const inventory = db.getInventory();
-    const rates = db.getRates();
+    
+    let payments = [];
+    try {
+      payments = await adminService.getPayments();
+    } catch(e) {
+      payments = db.getPayments();
+    }
+    
+    let inventory = { mixedPaperKg: 0, cardboardKg: 0, whitePaperKg: 0 };
+    try {
+      inventory = await adminService.getInventory();
+    } catch(e) {
+      inventory = db.getInventory();
+    }
+    
+    let pickups = [];
+    try {
+      pickups = await adminService.getPickups();
+    } catch (e) {
+      pickups = db.getPickups();
+    }
+    
+    let rates = null;
+    try {
+      rates = await adminService.getRates();
+    } catch (e) {
+      rates = db.getRates();
+    }
 
     // 1. Purchased weight = actual weight of completed or paid pickups
     const purchasedKg = pickups
@@ -25,9 +51,9 @@ export const financeService = {
     // 3. Revenue = sum of Completed Industry Orders (which write to sales collection)
     const revenue = sales.reduce((sum, s) => sum + s.totalRevenue, 0);
 
-    // 4. Expenses = total amount disbursed to schools (payments marked 'paid')
+    // 4. Expenses = total amount disbursed or pending (accrual accounting)
     const expenses = payments
-      .filter(p => p.status === 'paid')
+      .filter(p => p.status === 'paid' || p.status === 'pending')
       .reduce((sum, p) => sum + p.amount, 0);
 
     // 5. Net Profit

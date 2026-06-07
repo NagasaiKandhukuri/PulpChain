@@ -8,7 +8,15 @@ import { generatePurchaseReceiptPDF } from '../../services/purchaseReceiptGenera
 
 export const SchoolPayments = () => {
   const { user } = useAuth();
-  const payments = schoolService.getPayments(user.id).reverse(); // Newest first
+  const [payments, setPayments] = React.useState([]);
+
+  React.useEffect(() => {
+    if (user?.id) {
+      schoolService.getPayments(user.id)
+        .then(data => setPayments(data))
+        .catch(console.error);
+    }
+  }, [user?.id]);
 
   // Summary calculations
   const totalEarned = payments
@@ -87,13 +95,18 @@ export const SchoolPayments = () => {
                   <td>
                     {p.status === 'paid' ? (
                       <button
-                        onClick={() => {
-                          const pickups = schoolService.getPickups(user.id);
-                          const pickup = pickups.find(pk => pk.id === p.pickupId);
-                          if (pickup) {
-                            generatePurchaseReceiptPDF(pickup);
-                          } else {
-                            alert("Pickup details not found.");
+                        onClick={async () => {
+                          try {
+                            const pickups = await schoolService.getPickups(user.id);
+                            const pickup = pickups.find(pk => pk.id === p.pickupId);
+                            if (pickup) {
+                              generatePurchaseReceiptPDF(pickup);
+                            } else {
+                              alert("Pickup details not found.");
+                            }
+                          } catch(e) {
+                            console.error(e);
+                            alert("Failed to fetch pickup details.");
                           }
                         }}
                         className="btn btn-primary btn-sm"

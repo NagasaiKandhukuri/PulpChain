@@ -11,8 +11,7 @@ export const RequestOrder = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [rates, setRates] = React.useState(null);
-  const inventory = adminService.getInventory();
-
+  const [inventory, setInventory] = React.useState({ mixedPaperKg: 0, cardboardKg: 0, whitePaperKg: 0 });
   const [paperType, setPaperType] = React.useState('mixedPaper');
   const [quantity, setQuantity] = React.useState('');
   const [deliveryAddress, setDeliveryAddress] = React.useState('');
@@ -25,9 +24,10 @@ export const RequestOrder = () => {
   React.useEffect(() => {
     const loadAddress = async () => {
       try {
-        const [industriesData, ratesData] = await Promise.all([
-          adminService.getIndustries(),
-          adminService.getRates()
+        const [industriesData, ratesData, inventoryData] = await Promise.all([
+          adminService.getIndustries().catch(() => []),
+          adminService.getRates().catch(() => null),
+          adminService.getInventory().catch(() => ({ mixedPaperKg: 0, cardboardKg: 0, whitePaperKg: 0 }))
         ]);
         const industries = Array.isArray(industriesData) ? industriesData : [];
         const ind = industries.find(i => i.id === user?.id);
@@ -35,6 +35,7 @@ export const RequestOrder = () => {
           setDeliveryAddress(ind.address || '');
         }
         setRates(ratesData);
+        setInventory(inventoryData);
       } catch (err) {
         console.error('Failed to load data:', err);
       }

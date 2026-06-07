@@ -6,23 +6,24 @@ import { formatINR } from '../../components/Layout';
 import { LayoutGrid, AlertCircle, Scale, ShieldCheck, Users, ShoppingBag } from 'lucide-react';
 
 export const Marketplace = () => {
-  const [schools, setSchools] = useState([]);
-  const [industries, setIndustries] = useState([]);
   const [rates, setRates] = useState(null);
+  const [inventory, setInventory] = useState({ mixedPaperKg: 0, cardboardKg: 0, whitePaperKg: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [schoolsData, industriesData, ratesData] = await Promise.all([
-          adminService.getSchools(),
-          adminService.getIndustries(),
-          adminService.getRates()
+        const [ratesData, inventoryData] = await Promise.all([
+          adminService.getRates().catch(e => { console.error('Rates error', e); return null; }),
+          adminService.getInventory().catch(e => { console.error('Inventory error', e); return { mixedPaperKg: 0, cardboardKg: 0, whitePaperKg: 0 }; })
         ]);
 
-        setSchools(Array.isArray(schoolsData) ? schoolsData : []);
-        setIndustries(Array.isArray(industriesData) ? industriesData : []);
-        setRates(ratesData);
+        setRates(ratesData || {});
+        setInventory(inventoryData);
+      } catch (e) {
+        console.error('Marketplace error:', e);
+        setRates({});
+        setInventory({ mixedPaperKg: 0, cardboardKg: 0, whitePaperKg: 0 });
       } finally {
         setLoading(false);
       }
@@ -30,17 +31,13 @@ export const Marketplace = () => {
     loadData();
   }, []);
 
-  const inventory = adminService.getInventory();
-  const summary = financeService.getFinancialSummary();
-  const orders = adminService.getOrders();
-
   if (loading) return <div>Loading marketplace data...</div>;
 
   // Check if selling rates are configured
   const isConfigured = rates && 
-                       rates.mixedPaperSell !== null && 
-                       rates.cardboardSell !== null && 
-                       rates.whitePaperSell !== null;
+                       rates.mixedPaperSell != null && 
+                       rates.cardboardSell != null && 
+                       rates.whitePaperSell != null;
 
   // Availability status helpers
   const getAvailabilityStatus = (weight) => {
@@ -58,48 +55,7 @@ export const Marketplace = () => {
         </p>
       </section>
 
-      {/* Live Marketplace Statistics Section */}
-      <div className="grid-cols-4" style={{ gap: '20px' }}>
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px' }}>
-          <div style={{ padding: '12px', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', borderRadius: 'var(--radius-md)' }}>
-            <Scale size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>TOTAL RECYCLED</span>
-            <h3 style={{ fontSize: '1.5rem', marginTop: '2px' }}>{summary.purchasedKg + summary.soldKg} kg</h3>
-          </div>
-        </div>
 
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px' }}>
-          <div style={{ padding: '12px', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', borderRadius: 'var(--radius-md)' }}>
-            <Users size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>PARTNER SCHOOLS</span>
-            <h3 style={{ fontSize: '1.5rem', marginTop: '2px' }}>{schools.length}</h3>
-          </div>
-        </div>
-
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px' }}>
-          <div style={{ padding: '12px', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', borderRadius: 'var(--radius-md)' }}>
-            <Users size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>INDUSTRY BUYERS</span>
-            <h3 style={{ fontSize: '1.5rem', marginTop: '2px' }}>{industries.length}</h3>
-          </div>
-        </div>
-
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px' }}>
-          <div style={{ padding: '12px', backgroundColor: 'var(--primary-light)', color: 'var(--primary)', borderRadius: 'var(--radius-md)' }}>
-            <ShoppingBag size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>TRANSACTIONS</span>
-            <h3 style={{ fontSize: '1.5rem', marginTop: '2px' }}>{orders.filter(o => o.status === 'completed').length}</h3>
-          </div>
-        </div>
-      </div>
 
       {!isConfigured ? (
         <div className="empty-state" style={{ maxWidth: '600px', margin: '0 auto' }}>

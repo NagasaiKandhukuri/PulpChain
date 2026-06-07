@@ -11,17 +11,20 @@ export const IndustryDashboard = () => {
   const { user } = useAuth();
   const [industries, setIndustries] = useState([]);
   const [rates, setRates] = useState(null);
+  const [inventory, setInventory] = useState({ mixedPaperKg: 0, cardboardKg: 0, whitePaperKg: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [industriesData, ratesData] = await Promise.all([
-          adminService.getIndustries(),
-          adminService.getRates()
+        const [industriesData, ratesData, inventoryData] = await Promise.all([
+          adminService.getIndustries().catch(() => []),
+          adminService.getRates().catch(() => null),
+          adminService.getInventory().catch(() => ({ mixedPaperKg: 0, cardboardKg: 0, whitePaperKg: 0 }))
         ]);
         setIndustries(Array.isArray(industriesData) ? industriesData : []);
         setRates(ratesData);
+        setInventory(inventoryData);
       } finally {
         setLoading(false);
       }
@@ -29,8 +32,6 @@ export const IndustryDashboard = () => {
     loadData();
   }, []);
 
-  const inventory = adminService.getInventory();
-  
   const industry = industries.find(i => i.id === user?.id) || {};
 
   if (loading) return <div>Loading dashboard data...</div>;

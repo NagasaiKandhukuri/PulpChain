@@ -17,6 +17,14 @@ export const SchoolDashboard = () => {
     adminService.getRates().then(setRates).catch(console.error);
   }, []);
 
+  const [metrics, setMetrics] = useState({
+    totalPickups: 0,
+    totalEarnings: 0,
+    totalWeightCompleted: 0,
+    recentPickups: [],
+    recentPayments: []
+  });
+
   useEffect(() => {
     if (user?.id) {
       supabase.from('schools')
@@ -26,10 +34,12 @@ export const SchoolDashboard = () => {
         .then(({ data }) => {
           if (data) setSchool(data);
         });
+        
+      schoolService.getDashboardData(user.id)
+        .then(setMetrics)
+        .catch(console.error);
     }
   }, [user?.id]);
-
-  const metrics = schoolService.getDashboardData(user.id);
 
   // Check if rates are configured
   const ratesConfigured = rates && 

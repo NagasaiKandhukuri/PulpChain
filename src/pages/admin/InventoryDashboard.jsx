@@ -29,10 +29,26 @@ ChartJS.register(
 );
 
 export const InventoryDashboard = () => {
-  const inventory = adminService.getInventory();
-  const summary = financeService.getFinancialSummary();
-  const transactions = adminService.getInventoryTransactions().reverse(); // Newest first
-  const rates = adminService.getRates();
+  const [summary, setSummary] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+
+  const [inventory, setInventory] = React.useState({ mixedPaperKg: 0, cardboardKg: 0, whitePaperKg: 0 });
+  const [transactions, setTransactions] = React.useState([]);
+  const [rates, setRates] = React.useState(null);
+
+  React.useEffect(() => {
+    Promise.all([
+      adminService.getInventory().catch(() => ({ mixedPaperKg: 0, cardboardKg: 0, whitePaperKg: 0 })),
+      adminService.getInventoryTransactions().catch(() => []),
+      adminService.getRates().catch(() => null),
+      financeService.getFinancialSummary().catch(() => ({}))
+    ]).then(([invData, txData, ratesData, summaryData]) => {
+      setInventory(invData);
+      setTransactions(txData);
+      setRates(ratesData);
+      setSummary(summaryData);
+    }).finally(() => setLoading(false));
+  }, []);
 
   const ratesConfigured = rates && 
                          rates.mixedPaperSell !== null && 
@@ -49,7 +65,7 @@ export const InventoryDashboard = () => {
 
   // Compile visual trends from transaction histories
   const trendsMap = {};
-  adminService.getInventoryTransactions().forEach(t => {
+  transactions.forEach(t => {
     const day = new Date(t.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     if (!trendsMap[day]) {
       trendsMap[day] = { procured: 0, sold: 0 };
@@ -122,6 +138,8 @@ export const InventoryDashboard = () => {
     }
   };
 
+  if (loading) return <div>Loading inventory data...</div>;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       <div>
@@ -135,25 +153,25 @@ export const InventoryDashboard = () => {
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>AVAILABLE STOCK</span>
           <h2 style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Scale style={{ color: 'var(--primary)' }} size={20} />
-            {summary.currentStock} kg
+            {summary?.currentStock || 0} kg
           </h2>
         </div>
 
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>INVENTORY VALUE</span>
           <h2 style={{ fontSize: '1.8rem', color: 'var(--success)' }}>
-            {formatINR(summary.inventoryValue)}
+            {formatINR(summary?.inventoryValue || 0)}
           </h2>
         </div>
 
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>TOTAL PROCURED</span>
-          <h2 style={{ fontSize: '1.8rem' }}>{summary.purchasedKg} kg</h2>
+          <h2 style={{ fontSize: '1.8rem' }}>{summary?.purchasedKg || 0} kg</h2>
         </div>
 
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>TOTAL SOLD</span>
-          <h2 style={{ fontSize: '1.8rem' }}>{summary.soldKg} kg</h2>
+          <h2 style={{ fontSize: '1.8rem' }}>{summary?.soldKg || 0} kg</h2>
         </div>
       </div>
 
@@ -161,27 +179,27 @@ export const InventoryDashboard = () => {
       <div className="grid-cols-5">
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '16px' }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>TURNOVER RATE</span>
-          <h3 style={{ fontSize: '1.4rem', color: 'var(--primary)' }}>{summary.turnoverPct.toFixed(1)}%</h3>
+          <h3 style={{ fontSize: '1.4rem', color: 'var(--primary)' }}>{(summary?.turnoverPct || 0).toFixed(1)}%</h3>
         </div>
 
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '16px' }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>UTILIZATION RATE</span>
-          <h3 style={{ fontSize: '1.4rem', color: 'var(--primary)' }}>{summary.utilizationPct.toFixed(1)}%</h3>
+          <h3 style={{ fontSize: '1.4rem', color: 'var(--primary)' }}>{(summary?.utilizationPct || 0).toFixed(1)}%</h3>
         </div>
 
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '16px' }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>AVG BUY COST</span>
-          <h3 style={{ fontSize: '1.4rem' }}>{formatINR(summary.avgProcurementCost)} /kg</h3>
+          <h3 style={{ fontSize: '1.4rem' }}>{formatINR(summary?.avgProcurementCost || 0)} /kg</h3>
         </div>
 
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '16px' }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>AVG SELL RATE</span>
-          <h3 style={{ fontSize: '1.4rem' }}>{formatINR(summary.avgSellingPrice)} /kg</h3>
+          <h3 style={{ fontSize: '1.4rem' }}>{formatINR(summary?.avgSellingPrice || 0)} /kg</h3>
         </div>
 
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '16px' }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>GROSS MARGIN</span>
-          <h3 style={{ fontSize: '1.4rem', color: 'var(--success)' }}>{formatINR(summary.grossMargin)} /kg</h3>
+          <h3 style={{ fontSize: '1.4rem', color: 'var(--success)' }}>{formatINR(summary?.grossMargin || 0)} /kg</h3>
         </div>
       </div>
 

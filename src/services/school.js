@@ -61,7 +61,7 @@ export const schoolService = {
         .from('pickups')
         .select(`*, schools:school_id (name)`)
         .eq('school_id', schoolId)
-        .order('created_at', { ascending: false });
+        .order('request_date', { ascending: false });
         
       if (error) throw new Error(error.message);
       
@@ -87,15 +87,47 @@ export const schoolService = {
   },
 
   // Get payments received for a school
-  getPayments: (schoolId) => {
+  getPayments: async (schoolId) => {
+    if (FEATURES.USE_SUPABASE_AUTH) {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('school_id', schoolId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching payments:', error);
+        return [];
+      }
+      return data.map(p => ({
+        id: p.id,
+        schoolId: p.school_id,
+        pickupId: p.pickup_id,
+        amount: Number(p.amount),
+        status: p.status,
+        paymentDate: p.payment_date,
+        transactionReference: p.transaction_reference
+      }));
+    }
     const payments = db.getPayments();
     return payments.filter(p => p.schoolId === schoolId);
   },
 
   // Get dashboard metrics for school
-  getDashboardData: (schoolId) => {
-    const schoolPickups = schoolService.getPickups(schoolId);
-    const schoolPayments = schoolService.getPayments(schoolId);
+  getDashboardData: async (schoolId) => {
+    let schoolPickups = [];
+    try {
+      schoolPickups = await schoolService.getPickups(schoolId);
+    } catch(e) {
+      schoolPickups = [];
+    }
+    let schoolPayments = [];
+    try {
+      schoolPayments = await schoolService.getPayments(schoolId);
+    } catch(e) {
+      schoolPayments = [];
+    }
 
     // Sum of paid payments
     const totalEarnings = schoolPayments
@@ -110,7 +142,7 @@ export const schoolService = {
       totalPickups: schoolPickups.length,
       totalEarnings,
       totalWeightCompleted,
-      recentPickups: schoolPickups.slice(-5).reverse(), // Last 5 requests
+      recentPickups: schoolPickups.slice(0, 5), // Assumes already sorted descending
       recentPayments: schoolPayments.slice(-5).reverse()
     };
   }

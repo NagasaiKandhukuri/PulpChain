@@ -16,9 +16,9 @@ export const ManageOrders = () => {
     loadOrders();
   }, []);
 
-  const handleStatusChange = (id, nextStatus) => {
+  const handleStatusChange = async (id, nextStatus) => {
     try {
-      adminService.updateOrderStatus(id, nextStatus);
+      await adminService.updateOrderStatus(id, nextStatus);
       loadOrders();
     } catch (err) {
       alert(err.message);

@@ -1,6 +1,7 @@
 import { db } from './db';
 import { supabase } from '../lib/supabase';
 import { FEATURES } from '../lib/features';
+import { adminService } from './admin';
 
 export const industryService = {
   // Place an order request
@@ -24,7 +25,7 @@ export const industryService = {
     const qty = parseFloat(quantity);
     if (isNaN(qty) || qty <= 0) throw new Error('Please enter a valid quantity.');
 
-    const rates = db.getRates();
+    const rates = await adminService.getRates();
     if (!rates) throw new Error('Platform rates are currently unconfigured.');
 
     // MOQ check
@@ -33,7 +34,7 @@ export const industryService = {
     }
 
     // Stock check
-    const inventory = db.getInventory();
+    const inventory = await adminService.getInventory();
     const stockField = `${paperType}Kg`;
     const availableStock = inventory[stockField] || 0;
 

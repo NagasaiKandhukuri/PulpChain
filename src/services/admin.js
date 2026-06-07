@@ -55,15 +55,18 @@ export const adminService = {
       };
       
       data.forEach(row => {
-        if (row.paper_type === 'mixedPaper') {
+        if (!row.paper_type) return;
+        const normalizedType = row.paper_type.replace(/\s+/g, '').toLowerCase();
+        
+        if (normalizedType === 'mixedpaper') {
           rates.mixedPaper = row.buy_rate !== null ? Number(row.buy_rate) : null;
           rates.mixedPaperSell = row.sell_rate !== null ? Number(row.sell_rate) : null;
           rates.moq = row.moq !== null ? Number(row.moq) : null;
-        } else if (row.paper_type === 'cardboard') {
+        } else if (normalizedType === 'cardboard') {
           rates.cardboard = row.buy_rate !== null ? Number(row.buy_rate) : null;
           rates.cardboardSell = row.sell_rate !== null ? Number(row.sell_rate) : null;
           if (row.moq !== null) rates.moq = Number(row.moq);
-        } else if (row.paper_type === 'whitePaper') {
+        } else if (normalizedType === 'whitepaper') {
           rates.whitePaper = row.buy_rate !== null ? Number(row.buy_rate) : null;
           rates.whitePaperSell = row.sell_rate !== null ? Number(row.sell_rate) : null;
           if (row.moq !== null) rates.moq = Number(row.moq);
@@ -121,7 +124,7 @@ export const adminService = {
       const { data, error } = await supabase
         .from('pickups')
         .select(`*, schools:school_id (name)`)
-        .order('created_at', { ascending: false });
+        .order('request_date', { ascending: false });
       if (error) throw new Error(error.message);
       return data.map(p => ({
         id: p.id,
@@ -320,11 +323,59 @@ export const adminService = {
   },
 
   // --- Payments Collection Management ---
-  getPayments: () => {
+  getPayments: async () => {
+    if (FEATURES.USE_SUPABASE_AUTH) {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*, schools:school_id (name)')
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error fetching payments:', error);
+        return [];
+      }
+      return data.map(p => ({
+        id: p.id,
+        schoolId: p.school_id,
+        schoolName: p.schools?.name || 'Unknown School',
+        pickupId: p.pickup_id,
+        amount: Number(p.amount),
+        status: p.status,
+        paymentDate: p.payment_date,
+        transactionReference: p.transaction_reference,
+        createdAt: p.created_at
+      }));
+    }
     return db.getPayments();
   },
 
-  processPayment: (paymentId, transactionReference) => {
+  processPayment: async (paymentId, transactionReference) => {
+    const txnRef = transactionReference || 'TXN_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    const paymentDate = new Date().toISOString();
+
+    if (FEATURES.USE_SUPABASE_AUTH) {
+      const { data: payment, error: fetchError } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('id', paymentId)
+        .single();
+      if (fetchError || !payment) throw new Error('Payment record not found.');
+      if (payment.status === 'paid') throw new Error('Payment already processed.');
+
+      const { error: updateError } = await supabase
+        .from('payments')
+        .update({
+          status: 'paid',
+          payment_date: paymentDate,
+          transaction_reference: txnRef
+        })
+        .eq('id', paymentId);
+      if (updateError) throw new Error(updateError.message);
+
+      await adminService.updatePickupStatus(payment.pickup_id, 'paid');
+      return payment;
+    }
+
     const payments = db.getPayments();
     const index = payments.findIndex(p => p.id === paymentId);
     if (index === -1) throw new Error('Payment record not found.');
@@ -333,14 +384,14 @@ export const adminService = {
     if (payment.status === 'paid') throw new Error('Payment already processed.');
 
     payment.status = 'paid';
-    payment.paymentDate = new Date().toISOString();
-    payment.transactionReference = transactionReference || 'TXN_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    payment.paymentDate = paymentDate;
+    payment.transactionReference = txnRef;
 
     payments[index] = payment;
     db.savePayments(payments);
 
     // Update corresponding pickup status to paid
-    adminService.updatePickupStatus(payment.pickupId, 'paid');
+    await adminService.updatePickupStatus(payment.pickupId, 'paid');
     return payment;
   },
 
@@ -391,7 +442,7 @@ export const adminService = {
     return db.getOrders();
   },
 
-  updateOrderStatus: (orderId, nextStatus) => {
+  updateOrderStatus: async (orderId, nextStatus) => {
     const orders = db.getOrders();
     const index = orders.findIndex(o => o.id === orderId);
     if (index === -1) throw new Error('Order not found.');
@@ -413,7 +464,7 @@ export const adminService = {
 
     // 1. Deduct stock upon transition to "allocated"
     if (nextStatus === 'allocated') {
-      const inventory = db.getInventory();
+      const inventory = await adminService.getInventory();
       const stockField = `${order.paperType}Kg`;
       const available = inventory[stockField] || 0;
 
@@ -421,21 +472,37 @@ export const adminService = {
         throw new Error(`Cannot allocate stock. Available: ${available} kg. Requested: ${order.quantity} kg.`);
       }
 
-      inventory[stockField] = available - order.quantity;
-      db.saveInventory(inventory);
-      order.allocatedDate = new Date().toISOString();
+      if (FEATURES.USE_SUPABASE_AUTH) {
+        await supabase
+          .from('inventory')
+          .upsert({ paper_type: order.paperType, quantity: available - order.quantity });
 
-      // Log transaction
-      const transaction = {
-        id: 'tx_out_' + Math.random().toString(36).substr(2, 9),
-        type: 'out',
-        paperType: order.paperType,
-        quantity: order.quantity,
-        date: new Date().toISOString(),
-        referenceId: order.id,
-        notes: `Inventory allocated for Order #${order.id.slice(-6).toUpperCase()} to ${order.industryName}`
-      };
-      db.addTransaction(transaction);
+        await supabase
+          .from('inventory_transactions')
+          .insert({
+            paper_type: order.paperType,
+            quantity: order.quantity,
+            movement_type: 'out',
+            reference_id: order.id,
+            notes: `Inventory allocated for Order #${order.id.slice(-6).toUpperCase()} to ${order.industryName}`
+          });
+      } else {
+        inventory[stockField] = available - order.quantity;
+        db.saveInventory(inventory);
+        
+        const transaction = {
+          id: 'tx_out_' + Math.random().toString(36).substr(2, 9),
+          type: 'out',
+          paperType: order.paperType,
+          quantity: order.quantity,
+          date: new Date().toISOString(),
+          referenceId: order.id,
+          notes: `Inventory allocated for Order #${order.id.slice(-6).toUpperCase()} to ${order.industryName}`
+        };
+        db.addTransaction(transaction);
+      }
+      
+      order.allocatedDate = new Date().toISOString();
     }
 
     if (nextStatus === 'dispatched') {
@@ -493,22 +560,40 @@ export const adminService = {
       order.cancelledDate = new Date().toISOString();
       // If order was allocated, dispatched, or delivered, refund inventory
       if (['allocated', 'dispatched', 'delivered'].includes(currentStatus)) {
-        const inventory = db.getInventory();
+        const inventory = await adminService.getInventory();
         const stockField = `${order.paperType}Kg`;
-        inventory[stockField] = (inventory[stockField] || 0) + order.quantity;
-        db.saveInventory(inventory);
+        const newQty = (inventory[stockField] || 0) + order.quantity;
+        
+        if (FEATURES.USE_SUPABASE_AUTH) {
+          await supabase
+            .from('inventory')
+            .upsert({ paper_type: order.paperType, quantity: newQty });
 
-        // Log compensating transaction
-        const transaction = {
-          id: 'tx_ref_' + Math.random().toString(36).substr(2, 9),
-          type: 'in',
-          paperType: order.paperType,
-          quantity: order.quantity,
-          date: new Date().toISOString(),
-          referenceId: order.id,
-          notes: `Inventory refunded. Order #${order.id.slice(-6).toUpperCase()} cancelled.`
-        };
-        db.addTransaction(transaction);
+          await supabase
+            .from('inventory_transactions')
+            .insert({
+              paper_type: order.paperType,
+              quantity: order.quantity,
+              movement_type: 'in',
+              reference_id: order.id,
+              notes: `Inventory refunded. Order #${order.id.slice(-6).toUpperCase()} cancelled.`
+            });
+        } else {
+          inventory[stockField] = newQty;
+          db.saveInventory(inventory);
+
+          // Log compensating transaction
+          const transaction = {
+            id: 'tx_ref_' + Math.random().toString(36).substr(2, 9),
+            type: 'in',
+            paperType: order.paperType,
+            quantity: order.quantity,
+            date: new Date().toISOString(),
+            referenceId: order.id,
+            notes: `Inventory refunded. Order #${order.id.slice(-6).toUpperCase()} cancelled.`
+          };
+          db.addTransaction(transaction);
+        }
       }
     }
 
@@ -588,7 +673,22 @@ export const adminService = {
   },
 
   // --- Phase 2: Inventory Management ---
-  getInventory: () => {
+  getInventory: async () => {
+    if (FEATURES.USE_SUPABASE_AUTH) {
+      const { data, error } = await supabase.from('inventory').select('*');
+      if (error) {
+        console.error('Error fetching inventory:', error);
+        return { mixedPaperKg: 0, cardboardKg: 0, whitePaperKg: 0 };
+      }
+      const inv = { mixedPaperKg: 0, cardboardKg: 0, whitePaperKg: 0 };
+      data.forEach(row => {
+        const type = row.paper_type ? row.paper_type.replace(/\s+/g, '').toLowerCase() : '';
+        if (type === 'mixedpaper') inv.mixedPaperKg = Number(row.quantity);
+        else if (type === 'cardboard') inv.cardboardKg = Number(row.quantity);
+        else if (type === 'whitepaper') inv.whitePaperKg = Number(row.quantity);
+      });
+      return inv;
+    }
     return db.getInventory();
   },
 
@@ -601,7 +701,23 @@ export const adminService = {
     db.addTransaction(transaction);
   },
 
-  getInventoryTransactions: () => {
+  getInventoryTransactions: async () => {
+    if (FEATURES.USE_SUPABASE_AUTH) {
+      const { data, error } = await supabase.from('inventory_transactions').select('*').order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error fetching inventory_transactions:', error);
+        return [];
+      }
+      return data.map(t => ({
+        id: t.id,
+        paperType: t.paper_type,
+        quantity: Number(t.quantity),
+        type: t.movement_type, // 'in' or 'out'
+        referenceId: t.reference_id,
+        notes: t.notes,
+        date: t.created_at
+      }));
+    }
     return db.getTransactions();
   }
 };
