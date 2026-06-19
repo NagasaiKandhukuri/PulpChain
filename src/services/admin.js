@@ -356,9 +356,11 @@ export const adminService = {
 
     order.status = nextStatus;
     const nowIso = new Date().toISOString();
+    let dateField = null;
 
     if (nextStatus === 'approved') {
       order.approvedDate = nowIso;
+      dateField = 'approved_date';
     }
 
     // 1. Deduct stock upon transition to "allocated"
@@ -386,14 +388,17 @@ export const adminService = {
         });
       
       order.allocatedDate = nowIso;
+      dateField = 'allocated_date';
     }
 
     if (nextStatus === 'dispatched') {
       order.dispatchedDate = nowIso;
+      dateField = 'dispatched_date';
     }
 
     if (nextStatus === 'delivered') {
       order.deliveredDate = nowIso;
+      dateField = 'delivered_date';
     }
 
     // 2. Automatically generate Sales record and Industry Payment record when Order status reaches Completed
@@ -462,6 +467,7 @@ export const adminService = {
     // 3. Compensating logic: Refund stock if cancelled from allocated or later
     if (nextStatus === 'cancelled') {
       order.cancelledDate = nowIso;
+      dateField = 'cancelled_date';
       // If order was allocated, dispatched, or delivered, refund inventory
       if (['allocated', 'dispatched', 'delivered'].includes(currentStatus)) {
         const inventory = await adminService.getInventory();
