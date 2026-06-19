@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { FEATURES } from '../lib/features';
 import { authService } from '../services/auth';
 
 const AuthContext = createContext({});
@@ -12,22 +11,12 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!FEATURES.USE_SUPABASE_AUTH) {
-      // Legacy fallback
-      const legacyUser = authService.getCurrentUser();
-      if (legacyUser) {
-        setUser(legacyUser);
-        setRole(legacyUser.role);
-      }
-      setLoading(false);
-      return;
-    }
-
     // Get active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user || null);
       if (session?.user) {
+
         fetchRole(session.user.id);
       } else {
         setLoading(false);

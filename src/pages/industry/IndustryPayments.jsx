@@ -17,8 +17,16 @@ export const IndustryPayments = () => {
   });
 
   const loadPaymentsData = async () => {
-    setPayments(industryService.getIndustryPayments(user.id).reverse());
-    setSummary(industryService.getIndustryFinancialSummary(user.id));
+    try {
+      const [ordersData, paymentsData] = await Promise.all([
+        industryService.getOrders(user.id).catch(() => []),
+        industryService.getIndustryPayments(user.id).catch(() => [])
+      ]);
+      setPayments(paymentsData);
+      setSummary(await industryService.getIndustryFinancialSummary(user.id, ordersData, paymentsData));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   React.useEffect(() => {
@@ -85,7 +93,12 @@ export const IndustryPayments = () => {
 
       {/* Payments History table */}
       <div className="card">
-        <h3 style={{ fontSize: '1.25rem', marginBottom: '20px' }}>Transactions Ledger</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h3 style={{ fontSize: '1.25rem' }}>Transactions Ledger</h3>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-main)', padding: '4px 8px', borderRadius: '4px' }}>
+            * Amount includes GST
+          </span>
+        </div>
         {payments.length === 0 ? (
           <div className="empty-state">
             <Clock size={48} />
@@ -98,7 +111,9 @@ export const IndustryPayments = () => {
               <thead>
                 <tr>
                   <th>Invoice No</th>
-                  <th>Amount</th>
+                  <th>Base Amount</th>
+                  <th>GST Amount</th>
+                  <th>Final Payable Amount</th>
                   <th>Status</th>
                   <th>Payment Date</th>
                   <th>Transaction Reference</th>
@@ -108,7 +123,9 @@ export const IndustryPayments = () => {
                 {payments.map((p) => (
                   <tr key={p.id}>
                     <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{p.invoiceNumber}</td>
-                    <td style={{ fontWeight: 700 }}>{formatINR(p.amount)}</td>
+                    <td>{formatINR(p.baseAmount)}</td>
+                    <td>{formatINR(p.gstAmount)}</td>
+                    <td style={{ fontWeight: 700, color: 'var(--primary)' }}>{formatINR(p.amount)}</td>
                     <td>
                       <span className={`badge badge-${p.status}`}>
                         {p.status}

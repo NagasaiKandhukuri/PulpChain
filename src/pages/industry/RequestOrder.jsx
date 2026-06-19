@@ -6,6 +6,7 @@ import { authService } from '../../services/auth';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatINR } from '../../components/Layout';
 import { ShoppingCart, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { FINANCE_CONFIG } from '../../lib/constants';
 
 export const RequestOrder = () => {
   const navigate = useNavigate();
@@ -194,11 +195,29 @@ export const RequestOrder = () => {
             />
           </div>
 
-          <div style={{ padding: '12px', backgroundColor: 'var(--primary-light)', borderRadius: 'var(--radius-md)', fontSize: '0.9rem', fontWeight: 600 }}>
-            Estimated Order Value:{' '}
-            <span style={{ color: 'var(--primary)' }}>
-              {formatINR((parseFloat(quantity) || 0) * selectedPrice)}
-            </span>
+          <div style={{ padding: '12px', backgroundColor: 'var(--primary-light)', borderRadius: 'var(--radius-md)', fontSize: '0.9rem' }}>
+            {(() => {
+              const baseAmount = (parseFloat(quantity) || 0) * selectedPrice;
+              const gstAmount = baseAmount * (FINANCE_CONFIG.GST_RATE / 100);
+              const totalPayable = baseAmount + gstAmount;
+              
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
+                    <span>Base Amount:</span>
+                    <span>{formatINR(baseAmount)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
+                    <span>GST ({FINANCE_CONFIG.GST_RATE}%):</span>
+                    <span>{formatINR(gstAmount)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '8px', marginTop: '4px' }}>
+                    <span>Total Payable:</span>
+                    <span style={{ color: 'var(--primary)' }}>{formatINR(totalPayable)}</span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           <button type="submit" className="btn btn-primary btn-full">

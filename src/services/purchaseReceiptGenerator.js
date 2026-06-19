@@ -1,10 +1,8 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { db } from '../services/db';
+
 import { documentsService } from '../services/documents';
 import { supabase } from '../lib/supabase';
-import { FEATURES } from '../lib/features';
-
 // Helper function to format INR cleanly without using broken unicode symbols in PDF
 const formatPDFCurrency = (val) => {
   if (val === null || val === undefined) return 'Rs. 0.00';
@@ -17,40 +15,39 @@ const formatPDFCurrency = (val) => {
 export const generatePurchaseReceiptPDF = async (pickup) => {
   try {
     let schoolInfo = {};
-    if (FEATURES.USE_SUPABASE_AUTH) {
-      const { data, error } = await supabase
-        .from('schools')
-        .select('*')
-        .eq('id', pickup.schoolId)
-        .single();
-      
-      if (!error && data) {
-        // Map Supabase columns to expected camelCase properties for PDF
-        schoolInfo = {
-          name: data.name,
-          contactPerson: data.contact_person,
-          phone: data.phone,
-          email: data.email,
-          address: data.address
-        };
-      }
-    } else {
-      const schools = db.getSchools();
-      schoolInfo = schools.find(s => s.id === pickup.schoolId) || {};
+    const { data, error } = await supabase
+      .from('schools')
+      .select('*')
+      .eq('id', pickup.schoolId)
+      .single();
+    
+    if (!error && data) {
+      // Map Supabase columns to expected camelCase properties for PDF
+      schoolInfo = {
+        name: data.name,
+        contactPerson: data.contact_person,
+        phone: data.phone,
+        email: data.email,
+        address: data.address
+      };
     }
 
-    const payments = db.getPayments();
-    const paymentInfo = payments.find(py => py.pickupId === pickup.id) || {};
+    const { data: paymentInfoData } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('pickup_id', pickup.id)
+      .single();
+    const paymentInfo = paymentInfoData || {};
     
     // Determine Receipt Number
     let receiptNo = '';
-    const docLogs = db.getDocuments();
+    const docLogs = await documentsService.getDocuments();
     const existingDoc = docLogs.find(d => d.referenceId === pickup.id && d.type === 'purchase_receipt');
     if (existingDoc) {
       receiptNo = existingDoc.documentNumber;
     } else {
       receiptNo = `REC-${new Date(pickup.completedDate || Date.now()).toISOString().slice(2,10).replace(/-/g,'')}-${Math.floor(100 + Math.random() * 900)}`;
-      documentsService.logDocument(
+      await documentsService.logDocument(
         'purchase_receipt',
         receiptNo,
         pickup.id,

@@ -130,10 +130,18 @@ export const FinanceConfig = () => {
       </div>
 
       {/* Financial KPI stats grid */}
-      <div className="grid-cols-4">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '24px' }}>
         <div className="card">
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>REVENUE</span>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>REVENUE TOTAL</span>
           <h2 style={{ color: 'var(--success)', marginTop: '4px' }}>{formatINR(summary?.revenue || 0)}</h2>
+        </div>
+        <div className="card">
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>GST COLLECTED</span>
+          <h2 style={{ color: 'var(--primary)', marginTop: '4px' }}>{formatINR(summary?.gstCollected || 0)}</h2>
+        </div>
+        <div className="card">
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>INVOICE TOTAL</span>
+          <h2 style={{ color: 'var(--success)', marginTop: '4px' }}>{formatINR(summary?.invoiceTotal || 0)}</h2>
         </div>
         <div className="card">
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>EXPENSES</span>
@@ -142,10 +150,6 @@ export const FinanceConfig = () => {
         <div className="card">
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>NET PROFIT</span>
           <h2 style={{ color: 'var(--info)', marginTop: '4px' }}>{formatINR(summary?.netProfit || 0)}</h2>
-        </div>
-        <div className="card">
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>GROSS MARGIN %</span>
-          <h2 style={{ color: 'var(--success)', marginTop: '4px' }}>{(summary?.grossMarginPct || 0).toFixed(1)}%</h2>
         </div>
       </div>
 

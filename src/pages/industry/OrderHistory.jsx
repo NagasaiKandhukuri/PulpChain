@@ -10,9 +10,18 @@ export const OrderHistory = () => {
   const { user } = useAuth();
   const [orders, setOrders] = React.useState([]);
   const [filter, setFilter] = React.useState('all');
+  const [loading, setLoading] = React.useState(true);
 
   const loadOrders = async () => {
-    setOrders(industryService.getOrders(user.id).reverse());
+    try {
+      setLoading(true);
+      const data = await industryService.getOrders(user.id);
+      setOrders(data.reverse());
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   React.useEffect(() => {
@@ -47,7 +56,11 @@ export const OrderHistory = () => {
         </div>
       </div>
 
-      {filteredOrders.length === 0 ? (
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      ) : filteredOrders.length === 0 ? (
         <div className="empty-state">
           <Box size={48} />
           <h3 className="empty-state-title">No orders found</h3>
@@ -80,7 +93,7 @@ export const OrderHistory = () => {
                   </td>
                   <td>{o.quantity} kg</td>
                   <td>{formatINR(o.rate)}</td>
-                  <td style={{ fontWeight: 700 }}>{formatINR(o.amount)}</td>
+                  <td style={{ fontWeight: 700 }}>{formatINR(o.finalAmount)}</td>
                   <td>
                     <span className={`badge badge-${o.status}`}>
                       {o.status}
@@ -90,6 +103,9 @@ export const OrderHistory = () => {
               ))}
             </tbody>
           </table>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '12px', textAlign: 'right' }}>
+            * All displayed values are inclusive of 18% GST.
+          </p>
         </div>
       )}
     </div>

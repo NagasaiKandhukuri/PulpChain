@@ -8,7 +8,6 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { generatePurchaseReceiptPDF } from '../../services/purchaseReceiptGenerator';
 import { supabase } from '../../lib/supabase';
-import { FEATURES } from '../../lib/features';
 
 const formatPDFCurrency = (val) => {
   if (val === null || val === undefined) return 'Rs. 0.00';
@@ -35,12 +34,16 @@ export const InvoiceGenerator = () => {
     const completedOrPaid = allPickups.filter(p => p.status === 'completed' || p.status === 'paid');
     setPickups(completedOrPaid);
     
-    setSales(financeService.getSales().reverse());
+    const salesData = await financeService.getSales();
+    setSales(salesData.reverse());
     const schoolsData = await adminService.getSchools();
     setSchools(Array.isArray(schoolsData) ? schoolsData : []);
-    setPayments(adminService.getPayments());
+    setPayments(await adminService.getPayments());
     setIndustryPayments(await adminService.getAllIndustryPayments());
-    setDocumentsLog(documentsService.getDocuments());
+    const fetchDocuments = async () => {
+      setDocumentsLog(await documentsService.getDocuments());
+    };
+    fetchDocuments();
   };
 
   React.useEffect(() => {
@@ -53,23 +56,20 @@ export const InvoiceGenerator = () => {
   };
 
   // 1. Generate Purchase Receipt PDF
-  const generatePurchaseReceipt = (pickup) => {
-    generatePurchaseReceiptPDF(pickup);
-    loadData();
+  const generatePurchaseReceipt = async (pickup) => {
+    await generatePurchaseReceiptPDF(pickup);
+    await loadData();
   };
 
   // 2. Generate Sales Invoice PDF
   const generateSalesInvoice = async (sale) => {
     try {
       let industryDetails = {};
-      if (FEATURES.USE_SUPABASE_AUTH) {
-        // Industry's order has industryId, but we might only have buyerName directly if sale doesn't have it.
-        // Wait, the `sale` object is actually an order payment, let's see where it gets buyerName...
-        // Assuming sale.buyerName is the companyName, we query by company_name.
+      if (sale.industryId) {
         const { data } = await supabase
           .from('industries')
           .select('*')
-          .eq('company_name', sale.buyerName)
+          .eq('id', sale.industryId)
           .single();
         if (data) {
           industryDetails = {
@@ -78,23 +78,20 @@ export const InvoiceGenerator = () => {
             address: data.address
           };
         }
-      } else {
-        const rawIndustries = JSON.parse(localStorage.getItem('pulpchain_industries') || '[]');
-        industryDetails = rawIndustries.find(i => i.companyName === sale.buyerName) || {};
       }
 
       // Determine or log invoice metadata
       let invoiceNo = sale.invoiceNumber;
-      const existingDoc = getLoggedDoc(sale.id, 'sales_invoice');
+      const existingDoc = getLoggedDoc(sale.orderId, 'sales_invoice');
       if (!existingDoc) {
-        documentsService.logDocument(
+        await documentsService.logDocument(
           'sales_invoice',
           invoiceNo,
-          sale.id,
-          sale.buyerName,
+          sale.orderId,
+          sale.industryName,
           sale.totalRevenue
         );
-        loadData(); // Reload logs
+        await loadData(); // Reload logs
       }
 
       const doc = new jsPDF();
@@ -332,20 +329,19 @@ export const InvoiceGenerator = () => {
                       <th>Industry Name</th>
                       <th>Material</th>
                       <th>Quantity</th>
-                      <th>Amount</th>
+                      <th>Revenue</th>
+                      <th>GST</th>
+                      <th>Invoice Total</th>
                       <th>Payment Status</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sales.map((s) => {
+                      const matchedPayment = industryPayments.find(p => p.saleId === s.id);
                       const subtotal = s.totalRevenue;
-                      const gstVal = (subtotal * taxRate) / 100;
-                      const finalVal = subtotal + gstVal;
-                      const logged = getLoggedDoc(s.id, 'sales_invoice');
-                      
-                      // Match payment info
-                      const matchedPayment = industryPayments.find(p => p.orderId === s.id.replace('sale_', ''));
+                      const gstVal = matchedPayment ? matchedPayment.gstAmount : 0;
+                      const finalVal = matchedPayment ? matchedPayment.amount : subtotal;
                       
                       return (
                         <tr key={s.id}>
@@ -355,6 +351,8 @@ export const InvoiceGenerator = () => {
                             {s.paperType === 'mixedPaper' ? 'Mixed Paper' : s.paperType === 'cardboard' ? 'Cardboard' : 'White Paper'}
                           </td>
                           <td>{s.quantity} kg</td>
+                          <td>{formatINR(subtotal)}</td>
+                          <td>{formatINR(gstVal)}</td>
                           <td style={{ fontWeight: 700, color: 'var(--primary)' }}>{formatINR(finalVal)}</td>
                           <td>
                             <span className={`badge badge-${matchedPayment ? matchedPayment.status : 'pending'}`}>

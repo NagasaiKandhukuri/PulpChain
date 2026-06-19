@@ -15,7 +15,12 @@ export const SalesConfig = () => {
   const [success, setSuccess] = React.useState(false);
 
   const loadSales = async () => {
-    setSales(financeService.getSales().reverse());
+    try {
+      const data = await financeService.getSales();
+      setSales(data.reverse());
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   React.useEffect(() => {

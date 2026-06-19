@@ -1,44 +1,37 @@
-import { db } from './db';
-
+import { supabase } from '../lib/supabase';
 import { adminService } from './admin';
 
 export const financeService = {
   // Get sales ledger
-  getSales: () => {
-    return db.getSales();
+  getSales: async () => {
+    const { data, error } = await supabase
+      .from('sales')
+      .select('*')
+      .order('sale_date', { ascending: false });
+    if (error) throw new Error(error.message);
+      
+    return data.map(s => ({
+      id: s.id,
+      orderId: s.order_id,
+      industryId: s.industry_id,
+      invoiceNumber: s.invoice_number,
+      buyerName: s.buyer_name,
+      paperType: s.paper_type,
+      quantity: s.quantity,
+      saleRate: s.sale_rate,
+      totalRevenue: s.total_revenue,
+      saleDate: s.sale_date
+    }));
   },
 
   // Compute operational overview summaries in INR (₹)
   getFinancialSummary: async () => {
-    const sales = db.getSales();
-    
-    let payments = [];
-    try {
-      payments = await adminService.getPayments();
-    } catch(e) {
-      payments = db.getPayments();
-    }
-    
-    let inventory = { mixedPaperKg: 0, cardboardKg: 0, whitePaperKg: 0 };
-    try {
-      inventory = await adminService.getInventory();
-    } catch(e) {
-      inventory = db.getInventory();
-    }
-    
-    let pickups = [];
-    try {
-      pickups = await adminService.getPickups();
-    } catch (e) {
-      pickups = db.getPickups();
-    }
-    
-    let rates = null;
-    try {
-      rates = await adminService.getRates();
-    } catch (e) {
-      rates = db.getRates();
-    }
+    const sales = await financeService.getSales();
+    const payments = await adminService.getPayments();
+    const industryPayments = await adminService.getAllIndustryPayments();
+    const inventory = await adminService.getInventory();
+    const pickups = await adminService.getPickups();
+    const rates = await adminService.getRates();
 
     // 1. Purchased weight = actual weight of completed or paid pickups
     const purchasedKg = pickups
@@ -50,6 +43,10 @@ export const financeService = {
 
     // 3. Revenue = sum of Completed Industry Orders (which write to sales collection)
     const revenue = sales.reduce((sum, s) => sum + s.totalRevenue, 0);
+
+    // Calculate GST Collected from industry payments
+    const gstCollected = industryPayments.reduce((sum, p) => sum + (p.gstAmount || 0), 0);
+    const invoiceTotal = revenue + gstCollected;
 
     // 4. Expenses = total amount disbursed or pending (accrual accounting)
     const expenses = payments
@@ -85,6 +82,8 @@ export const financeService = {
       soldKg,
       paymentsCount: payments.length,
       revenue,
+      gstCollected,
+      invoiceTotal,
       expenses,
       netProfit,
       averageMarginPerKg,

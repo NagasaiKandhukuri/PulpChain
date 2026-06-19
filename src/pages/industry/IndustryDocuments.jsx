@@ -7,7 +7,6 @@ import { FileText, Download, Scale, ArrowUpRight } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from '../../lib/supabase';
-import { FEATURES } from '../../lib/features';
 
 const formatPDFCurrency = (val) => {
   if (val === null || val === undefined) return 'Rs. 0.00';
@@ -20,9 +19,23 @@ const formatPDFCurrency = (val) => {
 export const IndustryDocuments = () => {
   const { user } = useAuth();
   const [invoices, setInvoices] = React.useState([]);
+  const [orders, setOrders] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
 
   const loadDocuments = async () => {
-    setInvoices(industryService.getIndustryInvoices(user.id).reverse());
+    try {
+      setLoading(true);
+      const [invoicesData, ordersData] = await Promise.all([
+        Promise.resolve(industryService.getIndustryInvoices(user.id)),
+        Promise.resolve(industryService.getOrders(user.id))
+      ]);
+      setInvoices(invoicesData.reverse());
+      setOrders(ordersData);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   React.useEffect(() => {
@@ -31,27 +44,23 @@ export const IndustryDocuments = () => {
 
   const downloadPDF = async (invoice) => {
     try {
-      const orders = industryService.getOrders(user.id);
-      const order = orders.find(o => o.id === invoice.orderId) || {};
+      const currentOrders = await Promise.resolve(industryService.getOrders(user.id));
+      const order = currentOrders.find(o => o.id === invoice.orderId) || {};
       
       let industryDetails = {};
-      if (FEATURES.USE_SUPABASE_AUTH) {
-        const { data } = await supabase
-          .from('industries')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        if (data) {
-          industryDetails = {
-            contactPerson: data.contact_person,
-            gstNumber: data.gst_number,
-            address: data.address,
-            phone: data.phone
-          };
-        }
-      } else {
-        const rawIndustries = JSON.parse(localStorage.getItem('pulpchain_industries') || '[]');
-        industryDetails = rawIndustries.find(i => i.id === user.id) || {};
+      const { data } = await supabase
+        .from('industries')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      if (data) {
+        industryDetails = {
+          companyName: data.company_name,
+          contactPerson: data.contact_person,
+          gstNumber: data.gst_number,
+          address: data.address,
+          phone: data.phone
+        };
       }
 
       const doc = new jsPDF();
@@ -84,7 +93,7 @@ export const IndustryDocuments = () => {
       doc.text("CUSTOMER DETAILS (BILL TO):", 14, 48);
       doc.setFontSize(11);
       doc.setTextColor(15, 23, 42);
-      doc.text(invoice.industryName, 14, 54);
+      doc.text(industryDetails.companyName || 'Unknown Industry', 14, 54);
 
       doc.setFontSize(9);
       doc.setTextColor(100, 116, 139);
@@ -95,10 +104,11 @@ export const IndustryDocuments = () => {
       doc.line(14, 80, 196, 80);
 
       // Table mapping details
+      // Note: invoice.amount already includes GST as calculated by the backend.
       const taxRate = 18;
-      const subtotal = invoice.amount;
-      const gstAmount = (subtotal * taxRate) / 100;
-      const grandTotal = subtotal + gstAmount;
+      const subtotal = invoice.baseAmount || invoice.amount;
+      const gstAmount = invoice.gstAmount || 0;
+      const grandTotal = invoice.amount;
 
       const paperName = order.paperType === 'mixedPaper' ? 'Mixed Paper' 
                       : order.paperType === 'cardboard' ? 'Cardboard' 
@@ -161,10 +171,13 @@ export const IndustryDocuments = () => {
       </div>
 
       <div className="card">
-        <h3 style={{ fontSize: '1.25rem', marginBottom: '20px' }}>Sales Invoices</h3>
-        {invoices.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : invoices.length === 0 ? (
           <div className="empty-state">
-            <FileText size={48} />
+            <Box size={48} />
             <h3 className="empty-state-title">No documents available</h3>
             <p style={{ maxWidth: '400px', margin: '4px auto' }}>Invoice sheets will generate automatically once the order logistics status is marked Completed.</p>
           </div>
@@ -184,7 +197,6 @@ export const IndustryDocuments = () => {
               </thead>
               <tbody>
                 {invoices.map((inv) => {
-                  const orders = industryService.getOrders(user.id);
                   const order = orders.find(o => o.id === inv.orderId) || {};
                   const paperName = order.paperType === 'mixedPaper' ? 'Mixed Paper' 
                                   : order.paperType === 'cardboard' ? 'Cardboard' 

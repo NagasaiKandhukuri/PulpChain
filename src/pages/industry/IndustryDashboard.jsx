@@ -14,17 +14,33 @@ export const IndustryDashboard = () => {
   const [inventory, setInventory] = useState({ mixedPaperKg: 0, cardboardKg: 0, whitePaperKg: 0 });
   const [loading, setLoading] = useState(true);
 
+  const [metrics, setMetrics] = useState({ totalOrders: 0, fulfilledOrders: 0, pendingPayments: 0 });
+  const [finSummary, setFinSummary] = useState({ totalPaid: 0, totalPending: 0 });
+  const [invoicesList, setInvoicesList] = useState([]);
+  const [recentOrders, setRecentOrders] = useState([]);
+
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [industriesData, ratesData, inventoryData] = await Promise.all([
+        const [industriesData, ratesData, inventoryData, rawOrdersData, invoicesListData] = await Promise.all([
           adminService.getIndustries().catch(() => []),
           adminService.getRates().catch(() => null),
-          adminService.getInventory().catch(() => ({ mixedPaperKg: 0, cardboardKg: 0, whitePaperKg: 0 }))
+          adminService.getInventory().catch(() => ({ mixedPaperKg: 0, cardboardKg: 0, whitePaperKg: 0 })),
+          Promise.resolve(industryService.getOrders(user.id)).catch(() => []),
+          Promise.resolve(industryService.getIndustryPayments(user.id)).catch(() => [])
         ]);
+        
+        const ordersData = rawOrdersData || [];
+        const paymentsData = invoicesListData || [];
+        const metricsData = industryService.getDashboardData(user.id, ordersData);
+        const finSummaryData = await industryService.getIndustryFinancialSummary(user.id, ordersData, paymentsData);
         setIndustries(Array.isArray(industriesData) ? industriesData : []);
         setRates(ratesData);
         setInventory(inventoryData);
+        setMetrics(metricsData);
+        setFinSummary(finSummaryData);
+        setInvoicesList(paymentsData);
+        setRecentOrders(Array.isArray(ordersData) ? ordersData.reverse().slice(0, 5) : []);
       } finally {
         setLoading(false);
       }
@@ -34,10 +50,11 @@ export const IndustryDashboard = () => {
 
   const industry = industries.find(i => i.id === user?.id) || {};
 
-  if (loading) return <div>Loading dashboard data...</div>;
-  const metrics = industryService.getDashboardData(user.id);
-  const finSummary = industryService.getIndustryFinancialSummary(user.id);
-  const invoicesList = industryService.getIndustryInvoices(user.id);
+  if (loading) return (
+    <div className="flex justify-center items-center py-12">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+    </div>
+  );
 
   const ratesConfigured = rates && 
                          rates.mixedPaperSell !== null && 

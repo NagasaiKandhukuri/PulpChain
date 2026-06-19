@@ -28,9 +28,9 @@ export const ManageIndustries = () => {
     }
   };
 
-  const handleContractStatusChange = (id, status) => {
+  const handleContractStatusChange = async (id, status) => {
     try {
-      adminService.updateContractStatus(id, status);
+      await adminService.updateContractStatus(id, status);
       loadData();
     } catch (err) {
       alert(err.message);

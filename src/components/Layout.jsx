@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../services/auth';
+import { useAuth } from '../contexts/AuthContext';
 import { Recycle, LogOut, Menu, X, Landmark, Shield, Building, LayoutGrid } from 'lucide-react';
 
 // Format helper for Indian Rupees
@@ -16,15 +17,15 @@ export const formatINR = (num) => {
 export const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = authService.getCurrentUser();
+  const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   const handleLogout = () => {
     authService.logout();
     setMobileMenuOpen(false);
-    if (user?.role === 'admin') {
+    if (user?.user_metadata?.role === 'admin') {
       navigate('/admin/login');
-    } else if (user?.role === 'industry') {
+    } else if (user?.user_metadata?.role === 'industry') {
       navigate('/industry/login');
     } else {
       navigate('/login');

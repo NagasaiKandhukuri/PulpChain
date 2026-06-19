@@ -9,19 +9,22 @@ export const AdminDashboard = () => {
   const [pickups, setPickups] = useState([]);
   const [schools, setSchools] = useState([]);
   const [summary, setSummary] = useState(null);
+  const [status, setStatus] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [schoolsData, pickupsData, summaryData] = await Promise.all([
+        const [schoolsData, pickupsData, summaryData, statusData] = await Promise.all([
           adminService.getSchools().catch(e => { console.error('Schools error', e); return []; }),
           adminService.getPickups().catch(e => { console.error('Pickups error', e); return []; }),
-          financeService.getFinancialSummary().catch(e => { console.error('Finance error', e); return null; })
+          financeService.getFinancialSummary().catch(e => { console.error('Finance error', e); return null; }),
+          adminService.getOnboardingStatus().catch(e => { console.error('Status error', e); return {}; })
         ]);
         setSchools(Array.isArray(schoolsData) ? schoolsData : []);
         setPickups(Array.isArray(pickupsData) ? pickupsData : []);
         setSummary(summaryData || {});
+        setStatus(statusData || {});
       } catch (e) {
         console.error('Dashboard error:', e);
         setSchools([]);
@@ -34,7 +37,6 @@ export const AdminDashboard = () => {
     loadData();
   }, []);
 
-  const status = adminService.getOnboardingStatus() || {};
 
   const safePickups = Array.isArray(pickups) ? pickups : [];
   const safeSchools = Array.isArray(schools) ? schools : [];

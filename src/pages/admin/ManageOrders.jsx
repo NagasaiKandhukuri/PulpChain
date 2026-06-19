@@ -6,10 +6,24 @@ import { Box, Play, Check, X, ShieldAlert, Award, Truck, ShieldCheck, ChevronRig
 
 export const ManageOrders = () => {
   const [orders, setOrders] = React.useState([]);
+  const [payments, setPayments] = React.useState([]);
   const [filter, setFilter] = React.useState('all');
+  const [loading, setLoading] = React.useState(true);
 
   const loadOrders = async () => {
-    setOrders(adminService.getOrders().reverse());
+    try {
+      setLoading(true);
+      const [data, paymentsData] = await Promise.all([
+        adminService.getOrders(),
+        adminService.getAllIndustryPayments().catch(() => [])
+      ]);
+      setOrders(data.reverse());
+      setPayments(paymentsData);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   React.useEffect(() => {
@@ -94,20 +108,24 @@ export const ManageOrders = () => {
 
         {/* Filters */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {['all', 'requested', 'approved', 'allocated', 'dispatched', 'delivered', 'completed', 'cancelled'].map(st => (
+          {['all', 'requested', 'approved', 'allocated', 'dispatched', 'delivered', 'completed', 'cancelled'].map(f => (
             <button
-              key={st}
-              onClick={() => setFilter(st)}
-              className={`btn btn-sm ${filter === st ? 'btn-primary' : 'btn-secondary'}`}
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-secondary'}`}
               style={{ textTransform: 'capitalize' }}
             >
-              {st}
+              {f}
             </button>
           ))}
         </div>
       </div>
 
-      {filteredOrders.length === 0 ? (
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      ) : filteredOrders.length === 0 ? (
         <div className="empty-state">
           <Box size={48} />
           <h3 className="empty-state-title">No orders found</h3>
@@ -216,7 +234,6 @@ export const ManageOrders = () => {
                           
                           {/* Invoice & Payment Operations B2B */}
                           {(() => {
-                            const payments = adminService.getAllIndustryPayments();
                             const payment = payments.find(p => p.orderId === o.id);
                             
                             if (!payment) {
@@ -230,15 +247,14 @@ export const ManageOrders = () => {
                                 </Link>
                                 {payment.status === 'pending' ? (
                                   <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                       const ref = prompt("Enter bank transaction reference details:");
                                       if (ref !== null) {
                                         try {
-                                          adminService.markIndustryPaymentPaid(payment.id, ref);
+                                          await adminService.markIndustryPaymentPaid(payment.id, ref);
                                           loadOrders();
-                                          alert("B2B Payment marked as Paid successfully!");
                                         } catch (e) {
-                                          alert(e.message);
+                                          alert("Failed to mark as paid: " + e.message);
                                         }
                                       }
                                     }}
