@@ -1,5 +1,5 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+
+import { Routes, Route } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { ProtectedRoute } from './ProtectedRoute';
 
@@ -9,12 +9,19 @@ import { About } from '../pages/public/About';
 import { Pricing } from '../pages/public/Pricing';
 import { Contact } from '../pages/public/Contact';
 import { Login } from '../pages/public/Login';
-import { Register } from '../pages/public/Register';
+import { RegisterChoice } from '../pages/public/RegisterChoice';
+import { RegisterSchool } from '../pages/public/RegisterSchool';
 import { Marketplace } from '../pages/public/Marketplace';
 import { ForIndustries } from '../pages/public/ForIndustries';
 import { RegisterIndustry } from '../pages/public/RegisterIndustry';
 import { ForgotPassword } from '../pages/public/ForgotPassword';
 import { ResetPassword } from '../pages/public/ResetPassword';
+import { AuthCallback } from '../pages/public/AuthCallback';
+import { CompleteRegistration } from '../pages/public/CompleteRegistration';
+import { Terms } from '../pages/public/Terms';
+import { Privacy } from '../pages/public/Privacy';
+import { FAQ } from '../pages/public/FAQ';
+import { NotFound } from '../pages/public/NotFound';
 
 // School pages
 import { SchoolDashboard } from '../pages/school/Dashboard';
@@ -54,12 +61,18 @@ export const AppRoutes = () => {
       <Route path="/pricing" element={<Layout><Pricing /></Layout>} />
       <Route path="/contact" element={<Layout><Contact /></Layout>} />
       <Route path="/login" element={<Layout><Login /></Layout>} />
-      <Route path="/register" element={<Layout><Register /></Layout>} />
+      <Route path="/register" element={<Layout><RegisterChoice /></Layout>} />
+      <Route path="/register-school" element={<Layout><RegisterSchool /></Layout>} />
       <Route path="/marketplace" element={<Layout><Marketplace /></Layout>} />
       <Route path="/for-industries" element={<Layout><ForIndustries /></Layout>} />
       <Route path="/register-industry" element={<Layout><RegisterIndustry /></Layout>} />
       <Route path="/forgot-password" element={<Layout><ForgotPassword /></Layout>} />
       <Route path="/reset-password" element={<Layout><ResetPassword /></Layout>} />
+      <Route path="/auth/callback" element={<Layout><AuthCallback /></Layout>} />
+      <Route path="/complete-registration" element={<Layout><CompleteRegistration /></Layout>} />
+      <Route path="/terms" element={<Layout><Terms /></Layout>} />
+      <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
+      <Route path="/faq" element={<Layout><FAQ /></Layout>} />
 
       {/* School Protected Pages */}
       <Route
@@ -284,7 +297,7 @@ export const AppRoutes = () => {
       />
 
       {/* Wildcard fallback redirects */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Layout><NotFound /></Layout>} />
     </Routes>
   );
 };

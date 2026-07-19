@@ -1,5 +1,5 @@
-import React from 'react';
-import { Landmark, Users, Leaf, ShieldAlert } from 'lucide-react';
+
+import { Landmark, Users, Leaf } from 'lucide-react';
 
 export const About = () => {
   return (

@@ -8,13 +8,14 @@ export const documentsService = {
       .from('documents')
       .select('*')
       .order('created_at', { ascending: false });
-      
+
     if (error) {
       console.error('Error fetching documents:', error);
       return [];
     }
-    
-    return data.map(d => ({
+
+    const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+    return uniqueData.map(d => ({
       id: d.id,
       type: d.document_type,
       documentNumber: d.document_number,
@@ -34,12 +35,12 @@ export const documentsService = {
       party_name: recipientName,
       amount: amount
     }]).select().single();
-    
+
     if (error) {
       console.error('Error logging document:', error);
       throw new Error(error.message);
     }
-    
+
     return {
       id: data.id,
       type: data.document_type,

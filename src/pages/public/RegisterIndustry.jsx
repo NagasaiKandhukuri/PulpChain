@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { authService } from '../../services/auth';
 import { ShieldAlert, Building, ArrowRight } from 'lucide-react';
 
+
 export const RegisterIndustry = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = React.useState({
@@ -54,7 +55,7 @@ export const RegisterIndustry = () => {
     }
 
     if (!formData.agreeTerms) {
-      setError('You must agree to the Terms & Conditions.');
+      setError('You must agree to the Terms & Conditions and Privacy Policy.');
       setIsSubmitting(false);
       return;
     }
@@ -63,22 +64,25 @@ export const RegisterIndustry = () => {
     const types = Object.keys(preferredTypes).filter(k => preferredTypes[k]);
 
     try {
-      await authService.registerIndustry({
+      const result = await authService.registerIndustry({
         companyName: formData.companyName,
         contactPerson: formData.contactPerson,
         email: formData.email,
-        password: formData.password,
         phone: formData.phone,
         gstNumber: formData.gstNumber,
         address: formData.address,
         industryType: formData.industryType,
         monthlyRequirementKg: formData.monthlyRequirementKg,
-        preferredTypes: types
+        preferredTypes: types,
+        password: formData.password
       });
+
+      const message = result.emailConfirmationRequired
+        ? 'Registration submitted successfully. Check your email to verify your account before logging in. You must also wait for administrator approval.'
+        : 'Registration submitted successfully. You can now log in, but you must wait for administrator approval.';
+
       navigate('/industry/login', {
-        state: {
-          message: 'Registration submitted successfully. Please wait for administrator approval.'
-        }
+        state: { message }
       });
     } catch (err) {
       setError(err.message);
@@ -281,14 +285,20 @@ export const RegisterIndustry = () => {
                     style={{ marginTop: '4px' }}
                     required
                   />
-                  <span>I agree to the PulpChain Terms & Conditions of commercial logistics operations.</span>
+                  <span className="text-sm text-slate-600">
+                    I agree to the{' '}
+                    <Link to="/terms" target="_blank" className="text-emerald-600 hover:text-emerald-500 underline">Terms & Conditions</Link>
+                    {' '}and{' '}
+                    <Link to="/privacy" target="_blank" className="text-emerald-600 hover:text-emerald-500 underline">Privacy Policy</Link>
+                  </span>
                 </label>
               </div>
 
               <button type="submit" className="btn btn-primary btn-full" style={{ marginTop: '8px' }} disabled={isSubmitting}>
-                {isSubmitting ? 'Registering...' : <>Register Industrial Mill <ArrowRight size={16} /></>}
+                {isSubmitting ? 'Registering...' : <>Submit Application <ArrowRight size={16} /></>}
               </button>
             </form>
+
 
       </div>
 

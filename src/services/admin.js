@@ -10,7 +10,8 @@ export const adminService = {
       .select('*')
       .order('created_at', { ascending: false });
     if (error) throw new Error(error.message);
-    return data.map(s => ({
+    const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+    return uniqueData.map(s => ({
       id: s.id,
       name: s.name,
       address: s.address,
@@ -34,17 +35,24 @@ export const adminService = {
   getRates: async () => {
     const { data, error } = await supabase.from('rates').select('*');
     if (error) throw new Error(error.message);
-    
+
     const rates = {
       mixedPaper: null, cardboard: null, whitePaper: null,
       mixedPaperSell: null, cardboardSell: null, whitePaperSell: null,
-      moq: null
+      moq: null,
+      lastUpdated: null
     };
-    
+
     data.forEach(row => {
       if (!row.paper_type) return;
       const normalizedType = row.paper_type.replace(/\s+/g, '').toLowerCase();
-      
+
+      if (row.updated_at) {
+        if (!rates.lastUpdated || new Date(row.updated_at) > new Date(rates.lastUpdated)) {
+          rates.lastUpdated = row.updated_at;
+        }
+      }
+
       if (normalizedType === 'mixedpaper') {
         rates.mixedPaper = row.buy_rate !== null ? Number(row.buy_rate) : null;
         rates.mixedPaperSell = row.sell_rate !== null ? Number(row.sell_rate) : null;
@@ -84,7 +92,7 @@ export const adminService = {
         moq
       }
     ];
-    
+
     const { error } = await supabase.from('rates').upsert(rows, { onConflict: 'paper_type' });
     if (error) throw new Error(error.message);
     return adminService.getRates();
@@ -97,7 +105,8 @@ export const adminService = {
       .select(`*, schools:school_id (name)`)
       .order('request_date', { ascending: false });
     if (error) throw new Error(error.message);
-    return data.map(p => ({
+    const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+    return uniqueData.map(p => ({
       id: p.id,
       schoolId: p.school_id,
       schoolName: p.schools?.name || 'Unknown School',
@@ -155,7 +164,7 @@ export const adminService = {
         .select('quantity')
         .eq('paper_type', paperType)
         .single();
-      
+
       const currentQty = invData ? parseFloat(invData.quantity) : 0;
       await supabase
         .from('inventory')
@@ -193,9 +202,9 @@ export const adminService = {
       .eq('id', pickupId)
       .select(`*, schools:school_id (name)`)
       .single();
-      
+
     if (updateError) throw new Error(updateError.message);
-    
+
     return {
       id: updatedData.id,
       schoolId: updatedData.school_id,
@@ -224,7 +233,8 @@ export const adminService = {
       console.error('Error fetching payments:', error);
       return [];
     }
-    return data.map(p => ({
+    const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+    return uniqueData.map(p => ({
       id: p.id,
       schoolId: p.school_id,
       schoolName: p.schools?.name || 'Unknown School',
@@ -270,7 +280,8 @@ export const adminService = {
       .select('*')
       .order('created_at', { ascending: false });
     if (error) throw new Error(error.message);
-    return data.map(i => ({
+    const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+    return uniqueData.map(i => ({
       id: i.id,
       companyName: i.company_name,
       contactPerson: i.contact_person,
@@ -299,10 +310,11 @@ export const adminService = {
       .from('industry_orders')
       .select(`*, industries(company_name)`)
       .order('created_at', { ascending: false });
-      
+
     if (error) throw new Error(error.message);
-    
-    return data.map(o => ({
+
+    const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+    return uniqueData.map(o => ({
       id: o.id,
       industryId: o.industry_id,
       industryName: o.industries?.company_name || 'Unknown Industry',
@@ -334,7 +346,7 @@ export const adminService = {
       .eq('id', orderId)
       .single();
     if (error) throw new Error(error.message);
-    
+
     order = {
       id: data.id,
       industryId: data.industry_id,
@@ -386,7 +398,7 @@ export const adminService = {
           reference_id: order.id,
           notes: `Inventory allocated for Order #${order.id.slice(-6).toUpperCase()} to ${order.industryName}`
         });
-      
+
       order.allocatedDate = nowIso;
       dateField = 'allocated_date';
     }
@@ -460,7 +472,7 @@ export const adminService = {
         await supabase.from('industry_orders').update({ status: currentStatus, completed_date: null }).eq('id', orderId);
         throw new Error(`Failed to create payment record: ${payErr.message}. Order completion aborted.`);
       }
-      
+
       return order; // Return early to skip second update
     }
 
@@ -473,7 +485,7 @@ export const adminService = {
         const inventory = await adminService.getInventory();
         const stockField = `${order.paperType}Kg`;
         const newQty = (inventory[stockField] || 0) + order.quantity;
-        
+
         await supabase
           .from('inventory')
           .upsert({ paper_type: order.paperType, quantity: newQty });
@@ -494,14 +506,14 @@ export const adminService = {
     if (dateField) {
       updatePayload[dateField] = nowIso;
     }
-    
+
     const { error: updErr } = await supabase
       .from('industry_orders')
       .update(updatePayload)
       .eq('id', orderId);
-      
+
     if (updErr) throw new Error(updErr.message);
-    
+
     return order;
   },
 
@@ -511,10 +523,11 @@ export const adminService = {
       .from('industry_contracts')
       .select('*')
       .order('created_at', { ascending: false });
-      
+
     if (error) throw new Error(error.message);
-    
-    return data.map(c => ({
+
+    const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+    return uniqueData.map(c => ({
       id: c.id,
       industryId: c.industry_id,
       industryName: c.industry_name,
@@ -533,16 +546,16 @@ export const adminService = {
     if (status === 'approved') {
       updates.approved_date = new Date().toISOString();
     }
-    
+
     const { data, error } = await supabase
       .from('industry_contracts')
       .update(updates)
       .eq('id', contractId)
       .select()
       .single();
-      
+
     if (error) throw new Error(error.message);
-    
+
     return {
       id: data.id,
       industryId: data.industry_id,
@@ -563,10 +576,11 @@ export const adminService = {
       .from('industry_payments')
       .select(`*, industries(company_name)`)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw new Error(error.message);
-    
-    return data.map(p => ({
+
+    const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+    return uniqueData.map(p => ({
       id: p.id,
       saleId: p.sale_id,
       orderId: p.order_id,
@@ -594,7 +608,7 @@ export const adminService = {
       .eq('id', paymentId)
       .select()
       .single();
-      
+
     if (error) throw new Error(error.message);
     return data;
   },
@@ -608,17 +622,17 @@ export const adminService = {
     ]);
 
     // Check if buying and selling rates are configured
-    const ratesSet = rates && 
-                     rates.mixedPaper !== null && 
-                     rates.cardboard !== null && 
+    const ratesSet = rates &&
+                     rates.mixedPaper !== null &&
+                     rates.cardboard !== null &&
                      rates.whitePaper !== null &&
                      rates.mixedPaperSell !== null &&
                      rates.cardboardSell !== null &&
                      rates.whitePaperSell !== null;
-    
+
     const pendingSchools = schools.filter(s => s.status === 'pending');
     const pendingIndustries = industries.filter(i => i.status === 'pending');
-    
+
     // Checklist satisfied when no registrations are pending
     const registrationsReviewed = pendingSchools.length === 0 && pendingIndustries.length === 0;
     const ready = ratesSet && registrationsReviewed;
@@ -656,7 +670,8 @@ export const adminService = {
       console.error('Error fetching inventory_transactions:', error);
       return [];
     }
-    return data.map(t => ({
+    const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+    return uniqueData.map(t => ({
       id: t.id,
       paperType: t.paper_type,
       quantity: Number(t.quantity),

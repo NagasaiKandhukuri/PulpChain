@@ -1,6 +1,5 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-import { Truck, Scale, ShieldCheck, FileText, ArrowRight } from 'lucide-react';
+import { Truck, Scale, ShieldCheck, ArrowRight } from 'lucide-react';
 
 export const ForIndustries = () => {
   return (

@@ -1,7 +1,7 @@
 import React from 'react';
 import { adminService } from '../../services/admin';
-import { formatINR } from '../../components/Layout';
-import { ShieldCheck, ShieldAlert, Ban, FileText, Check, X } from 'lucide-react';
+import { formatINR } from '../../utils/format';
+import { ShieldAlert, Ban, FileText, Check, X } from 'lucide-react';
 
 export const ManageIndustries = () => {
   const [activeTab, setActiveTab] = React.useState('registrations'); // 'registrations' | 'contracts'

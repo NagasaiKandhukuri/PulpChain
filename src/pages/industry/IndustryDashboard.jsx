@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { industryService } from '../../services/industry';
 import { adminService } from '../../services/admin';
-import { authService } from '../../services/auth';
 import { useAuth } from '../../contexts/AuthContext';
-import { formatINR } from '../../components/Layout';
+import { formatINR } from '../../utils/format';
 import { Box, FileText, ShoppingBag, Weight, Clock, AlertTriangle, ShieldCheck, ArrowUpRight } from 'lucide-react';
 
 export const IndustryDashboard = () => {
@@ -17,7 +16,7 @@ export const IndustryDashboard = () => {
   const [metrics, setMetrics] = useState({ totalOrders: 0, fulfilledOrders: 0, pendingPayments: 0 });
   const [finSummary, setFinSummary] = useState({ totalPaid: 0, totalPending: 0 });
   const [invoicesList, setInvoicesList] = useState([]);
-  const [recentOrders, setRecentOrders] = useState([]);
+
 
   useEffect(() => {
     const loadData = async () => {
@@ -29,7 +28,7 @@ export const IndustryDashboard = () => {
           Promise.resolve(industryService.getOrders(user.id)).catch(() => []),
           Promise.resolve(industryService.getIndustryPayments(user.id)).catch(() => [])
         ]);
-        
+
         const ordersData = rawOrdersData || [];
         const paymentsData = invoicesListData || [];
         const metricsData = industryService.getDashboardData(user.id, ordersData);
@@ -40,7 +39,7 @@ export const IndustryDashboard = () => {
         setMetrics(metricsData);
         setFinSummary(finSummaryData);
         setInvoicesList(paymentsData);
-        setRecentOrders(Array.isArray(ordersData) ? ordersData.reverse().slice(0, 5) : []);
+
       } finally {
         setLoading(false);
       }
@@ -56,9 +55,9 @@ export const IndustryDashboard = () => {
     </div>
   );
 
-  const ratesConfigured = rates && 
-                         rates.mixedPaperSell !== null && 
-                         rates.cardboardSell !== null && 
+  const ratesConfigured = rates &&
+                         rates.mixedPaperSell !== null &&
+                         rates.cardboardSell !== null &&
                          rates.whitePaperSell !== null;
 
   return (
@@ -146,11 +145,11 @@ export const IndustryDashboard = () => {
 
       {/* Stock Levels & Orders */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }} className="grid-cols-2">
-        
+
         {/* Available Stocks card */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <h3>Available Stock & Selling Price</h3>
-          
+
           {!ratesConfigured ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '24px 0', textAlign: 'center' }}>
               <AlertTriangle size={28} style={{ color: 'var(--warning)' }} />
@@ -189,7 +188,7 @@ export const IndustryDashboard = () => {
               </div>
             </div>
           )}
-          
+
           <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', paddingTop: '12px' }}>
             <Link to="/industry/request-order" className="btn btn-primary btn-sm btn-full">
               Place Order Request

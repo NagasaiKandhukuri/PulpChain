@@ -1,7 +1,7 @@
 import React from 'react';
 import { adminService } from '../../services/admin';
-import { formatINR } from '../../components/Layout';
-import { ShieldAlert, Info, Scale, ShoppingCart } from 'lucide-react';
+import { formatINR } from '../../utils/format';
+import { ShieldAlert, Scale, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Pricing = () => {
@@ -12,9 +12,9 @@ export const Pricing = () => {
   }, []);
 
   // Determine if rates are configured
-  const isConfigured = rates && 
-                       rates.mixedPaper !== null && 
-                       rates.cardboard !== null && 
+  const isConfigured = rates &&
+                       rates.mixedPaper !== null &&
+                       rates.cardboard !== null &&
                        rates.whitePaper !== null &&
                        rates.mixedPaperSell !== null &&
                        rates.cardboardSell !== null &&

@@ -9,8 +9,8 @@ export const financeService = {
       .select('*')
       .order('sale_date', { ascending: false });
     if (error) throw new Error(error.message);
-      
-    return data.map(s => ({
+    const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+    return uniqueData.map(s => ({
       id: s.id,
       orderId: s.order_id,
       industryId: s.industry_id,

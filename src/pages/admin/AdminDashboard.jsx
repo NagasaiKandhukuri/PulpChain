@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { adminService } from '../../services/admin';
 import { financeService } from '../../services/finance';
-import { formatINR } from '../../components/Layout';
-import { CheckSquare, Square, Shield, Scale, PlusCircle, LayoutGrid, Users, Truck, DollarSign } from 'lucide-react';
+import { formatINR } from '../../utils/format';
+import { CheckSquare, Square, PlusCircle, Users, Truck } from 'lucide-react';
 
 export const AdminDashboard = () => {
   const [pickups, setPickups] = useState([]);

@@ -1,7 +1,7 @@
 import React from 'react';
 import { financeService } from '../../services/finance';
-import { formatINR } from '../../components/Layout';
-import { DollarSign, PlusCircle, Calendar, Receipt } from 'lucide-react';
+import { formatINR } from '../../utils/format';
+import { DollarSign, PlusCircle, Receipt } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const SalesConfig = () => {
@@ -13,6 +13,7 @@ export const SalesConfig = () => {
     saleRate: ''
   });
   const [success, setSuccess] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const loadSales = async () => {
     try {
@@ -34,24 +35,28 @@ export const SalesConfig = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setSuccess(false);
+    setIsSubmitting(true);
 
     const qty = parseFloat(formData.quantity);
     const rate = parseFloat(formData.saleRate);
 
     if (isNaN(qty) || qty <= 0) {
       alert('Please enter a valid quantity.');
+      setIsSubmitting(false);
       return;
     }
     if (isNaN(rate) || rate <= 0) {
       alert('Please enter a valid sale rate.');
+      setIsSubmitting(false);
       return;
     }
 
     try {
-      financeService.recordSale({
+      await financeService.recordSale({
         buyerName: formData.buyerName,
         paperType: formData.paperType,
         quantity: qty,
@@ -68,6 +73,8 @@ export const SalesConfig = () => {
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       alert(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -142,6 +149,8 @@ export const SalesConfig = () => {
                   value={formData.quantity}
                   onChange={handleChange}
                   required
+                  min="0.01"
+                  step="0.01"
                 />
               </div>
 
@@ -156,6 +165,7 @@ export const SalesConfig = () => {
                   value={formData.saleRate}
                   onChange={handleChange}
                   required
+                  min="0.01"
                 />
               </div>
             </div>
@@ -167,8 +177,8 @@ export const SalesConfig = () => {
               </span>
             </div>
 
-            <button type="submit" className="btn btn-primary btn-full" style={{ marginTop: '12px' }}>
-              <PlusCircle size={16} /> Record Commercial Sale
+            <button type="submit" className="btn btn-primary btn-full" style={{ marginTop: '12px' }} disabled={isSubmitting}>
+              {isSubmitting ? 'Processing...' : <><PlusCircle size={16} /> Record Commercial Sale</>}
             </button>
           </form>
         </div>

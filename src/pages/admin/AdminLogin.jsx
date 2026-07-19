@@ -20,7 +20,11 @@ export const AdminLogin = () => {
       await authService.loginAdmin(username, password);
       navigate('/admin/dashboard');
     } catch (err) {
-      setError(err.message);
+      if (err.message && err.message.toLowerCase().includes('email not confirmed')) {
+        setError('Your email is not verified. Please verify your email before signing in.');
+      } else {
+        setError('Invalid administrator credentials.');
+      }
       setIsSubmitting(false);
     }
   };

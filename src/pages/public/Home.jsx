@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Recycle, Award, TrendingUp, Sparkles, Building, Landmark } from 'lucide-react';
-import { formatINR } from '../../components/Layout';
+import { ArrowRight, Sparkles, Building, Award, TrendingUp } from 'lucide-react';
+import { formatINR } from '../../utils/format';
 import { adminService } from '../../services/admin';
 
 export const Home = () => {
@@ -15,14 +15,16 @@ export const Home = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '80px' }}>
       {/* Hero Section */}
       <section style={{
-        display: 'grid',
-        gridTemplateColumns: '1.2fr 0.8fr',
-        alignItems: 'center',
-        gap: '40px',
-        padding: '40px 0',
-        minHeight: '70vh'
-      }} className="grid-cols-2">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        position: 'relative',
+        backgroundColor: 'var(--surface-solid)',
+        border: '1px solid var(--surface-border)',
+        padding: '60px',
+        borderRadius: 'var(--radius-xl)',
+        margin: '0 -20px',
+        overflow: 'hidden'
+      }} className="grid-cols-2 hero-grid">
+        <div className="premium-glow-bg"></div>
+        <div className="animate-fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: '24px', position: 'relative', zIndex: 10 }}>
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -33,35 +35,38 @@ export const Home = () => {
             borderRadius: 'var(--radius-full)',
             width: 'fit-content',
             fontSize: '0.85rem',
-            fontWeight: 700
+            fontWeight: 700,
+            border: '1px solid var(--primary-glow)'
           }}>
-            <Sparkles size={14} /> NEW ERA OF SCHOOL RECYCLING
+            <Sparkles size={14} /> ENTERPRISE-GRADE CIRCULAR ECONOMY
           </div>
           <h1 style={{
-            fontSize: 'clamp(2.5rem, 5vw, 4rem)',
+            fontSize: 'clamp(2.5rem, 5vw, 4.5rem)',
             letterSpacing: '-0.03em',
-            lineHeight: 1.1
+            lineHeight: 1.05,
+            color: 'var(--text-heading)'
           }}>
-            Convert Waste Paper <br />
-            <span style={{ color: 'var(--primary)' }}>Into Real Value</span>
+            Extracting Value <br />
+            <span className="typewriter-text" style={{ color: 'var(--primary)', display: 'inline-block' }}>from Every Sheet</span>
           </h1>
           <p style={{
-            fontSize: '1.15rem',
+            fontSize: '1.2rem',
             color: 'var(--text-muted)',
-            maxWidth: '540px'
+            maxWidth: '540px',
+            lineHeight: 1.6
           }}>
-            PulpChain empowers educational institutions to set up systematic paper collection. Trade cardboard, office paper, and mixed paper for funds to support school development.
+            PulpChain connects educational institutions directly with commercial paper mills. Transform operational waste into audited, premium-rate financial returns while achieving your zero-waste sustainability targets.
           </p>
-          <div style={{ display: 'flex', gap: '16px', marginTop: '12px' }}>
-            <Link to="/register" className="btn btn-primary">
-              Register Your School <ArrowRight size={18} />
+          <div className="animate-fade-in-up animate-delay-200" style={{ display: 'flex', gap: '16px', marginTop: '12px' }}>
+            <Link to="/register" className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '1rem' }}>
+              Join the Network <ArrowRight size={18} />
             </Link>
-            <Link to="/pricing" className="btn btn-secondary">
+            <Link to="/pricing" className="btn btn-secondary" style={{ padding: '14px 28px', fontSize: '1rem' }}>
               View Dynamic Rates
             </Link>
           </div>
         </div>
-        <div style={{
+        <div className="animate-fade-in-up animate-delay-300" style={{
           backgroundColor: 'var(--primary-light)',
           borderRadius: 'var(--radius-lg)',
           padding: '40px',
@@ -96,9 +101,9 @@ export const Home = () => {
             </div>
           </div>
           <Link to="/register" style={{
-            marginTop: '12px',
+            display: 'block',
             textAlign: 'center',
-            fontSize: '0.9rem',
+            marginTop: '8px',
             color: 'var(--primary)',
             fontWeight: 700,
             textDecoration: 'none'
@@ -106,8 +111,28 @@ export const Home = () => {
         </div>
       </section>
 
+      {/* Marquee Section */}
+      <div className="marquee-container animate-fade-in-up animate-delay-400">
+        <div className="marquee-content">
+          <span className="marquee-item">SUSTAINABLE RECYCLING</span>
+          <span className="marquee-item">CIRCULAR ECONOMY</span>
+          <span className="marquee-item">EMPOWERING EDUCATION</span>
+          <span className="marquee-item">ZERO WASTE</span>
+          <span className="marquee-item">PREMIUM RATES</span>
+          <span className="marquee-item">INSTANT PAYOUTS</span>
+        </div>
+        <div className="marquee-content" aria-hidden="true">
+          <span className="marquee-item">SUSTAINABLE RECYCLING</span>
+          <span className="marquee-item">CIRCULAR ECONOMY</span>
+          <span className="marquee-item">EMPOWERING EDUCATION</span>
+          <span className="marquee-item">ZERO WASTE</span>
+          <span className="marquee-item">PREMIUM RATES</span>
+          <span className="marquee-item">INSTANT PAYOUTS</span>
+        </div>
+      </div>
+
       {/* Mission Section */}
-      <section style={{
+      <section className="animate-fade-in-up" style={{
         backgroundColor: 'var(--surface)',
         borderRadius: 'var(--radius-lg)',
         padding: '60px 40px',
@@ -119,14 +144,14 @@ export const Home = () => {
         alignItems: 'center',
         gap: '24px'
       }}>
-        <h2 style={{ fontSize: '2.2rem', maxWidth: '600px' }}>Our Mission: Convert Waste Paper Into Value</h2>
+        <h2 style={{ fontSize: '2.2rem', maxWidth: '600px' }}>Our Mission: Extracting Value from Every Sheet</h2>
         <p style={{ color: 'var(--text-muted)', maxWidth: '800px', fontSize: '1.1rem' }}>
           PulpChain bridges the gap between educational infrastructure and sustainability. We help schools design an operations model where every notebook, exam script, and supply box is collected, quantified, and traded responsibly. The resulting revenue flows directly back into school funding, creating a clean circular economy.
         </p>
       </section>
 
       {/* How It Works */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
+      <section className="animate-fade-in-up animate-delay-200" style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
         <div style={{ textAlign: 'center' }}>
           <h2 style={{ fontSize: '2.2rem' }}>Simple 3-Step Recycling Flow</h2>
           <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>From classrooms to commercial processing, we handle the heavy lifting.</p>
@@ -184,7 +209,7 @@ export const Home = () => {
       </section>
 
       {/* Why Choose Us */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
+      <section className="animate-fade-in-up animate-delay-300" style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
         <div style={{ textAlign: 'center' }}>
           <h2 style={{ fontSize: '2.2rem' }}>Why Schools Choose PulpChain</h2>
           <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>The premium standard in school recycling services.</p>
@@ -209,7 +234,7 @@ export const Home = () => {
       </section>
 
       {/* Call to Actions */}
-      <section style={{
+      <section className="animate-fade-in-up animate-delay-400" style={{
         background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)',
         color: 'var(--text-inverse)',
         borderRadius: 'var(--radius-lg)',
@@ -226,10 +251,10 @@ export const Home = () => {
           Registration is free and takes less than 5 minutes. Let's make your school a leader in community sustainability.
         </p>
         <div style={{ display: 'flex', gap: '16px' }}>
-          <Link to="/register" className="btn btn-secondary" style={{ backgroundColor: 'var(--text-inverse)', color: 'var(--primary)', borderColor: 'var(--text-inverse)' }}>
+          <Link to="/register" className="btn btn-inverse-solid">
             Register Your School
           </Link>
-          <Link to="/login" className="btn btn-secondary" style={{ background: 'transparent', color: 'var(--text-inverse)', borderColor: 'var(--text-inverse)' }}>
+          <Link to="/login" className="btn btn-inverse-outline">
             School Log In
           </Link>
         </div>

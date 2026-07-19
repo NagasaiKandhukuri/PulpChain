@@ -1,9 +1,9 @@
 import React from 'react';
 import { industryService } from '../../services/industry';
-import { authService } from '../../services/auth';
+
 import { useAuth } from '../../contexts/AuthContext';
-import { formatINR } from '../../components/Layout';
-import { Box, ShoppingBag } from 'lucide-react';
+import { formatINR } from '../../utils/format';
+import { Box } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const OrderHistory = () => {
@@ -40,7 +40,7 @@ export const OrderHistory = () => {
           <h1 style={{ fontSize: '2.2rem' }}>Order History Ledger</h1>
           <p style={{ color: 'var(--text-muted)' }}>Track scheduling, dispatch status, and shipping logs of purchased cargo.</p>
         </div>
-        
+
         {/* Filters */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {['all', 'requested', 'approved', 'allocated', 'dispatched', 'delivered', 'completed', 'cancelled'].map(st => (

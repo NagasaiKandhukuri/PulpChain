@@ -1,24 +1,176 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../services/auth';
 import { useAuth } from '../contexts/AuthContext';
-import { Recycle, LogOut, Menu, X, Landmark, Shield, Building, LayoutGrid } from 'lucide-react';
+import {
+  LogOut, Menu, X,
+  LayoutDashboard, Truck, Wallet, Package, FileText,
+  ShoppingCart, CreditCard, FolderOpen, Handshake,
+  Users, Factory, ClipboardList, Box, BarChart3, DollarSign, Settings
+} from 'lucide-react';
 
-// Format helper for Indian Rupees
-export const formatINR = (num) => {
-  if (num === null || num === undefined) return '₹0.00';
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 2
-  }).format(num);
+export const LogoImage = ({ size = 24 }) => (
+  <div style={{
+    width: size,
+    height: size,
+    overflow: 'hidden',
+    borderRadius: '4px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  }}>
+    <img
+      src="/assets/logo.jpg"
+      alt="PulpChain Logo"
+      style={{
+        width: '140%',
+        height: '140%',
+        objectFit: 'contain',
+        transform: 'translateY(-10%)'
+      }}
+    />
+  </div>
+);
+
+// Navigation configs per role
+const SCHOOL_NAV = [
+  { path: '/school/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/school/request', label: 'Request Pickup', icon: Truck },
+  { path: '/school/pickups', label: 'Pickups', icon: ClipboardList },
+  { path: '/school/payments', label: 'Earnings', icon: Wallet },
+];
+
+const INDUSTRY_NAV = [
+  { path: '/industry/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/industry/request-order', label: 'Request Materials', icon: ShoppingCart },
+  { path: '/industry/orders', label: 'Orders', icon: Package },
+  { path: '/industry/invoices', label: 'Invoices', icon: FileText },
+  { path: '/industry/payments', label: 'Payments', icon: CreditCard },
+  { path: '/industry/documents', label: 'Documents', icon: FolderOpen },
+  { path: '/industry/contracts', label: 'Contracts', icon: Handshake },
+];
+
+const ADMIN_NAV = [
+  { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/admin/schools', label: 'Schools', icon: Users },
+  { path: '/admin/industries', label: 'Industries', icon: Factory },
+  { path: '/admin/pickups', label: 'Pickups', icon: Truck },
+  { path: '/admin/orders', label: 'Orders', icon: Package },
+  { path: '/admin/inventory', label: 'Inventory', icon: Box },
+  { path: '/admin/rates', label: 'Rates', icon: BarChart3 },
+  { path: '/admin/sales', label: 'Sales', icon: DollarSign },
+  { path: '/admin/documents', label: 'Documents', icon: FileText },
+  { path: '/admin/finance', label: 'Finance', icon: Settings },
+];
+
+const PUBLIC_NAV = [
+  { path: '/', label: 'Home' },
+  { path: '/about', label: 'About Us' },
+  { path: '/marketplace', label: 'Marketplace' },
+  { path: '/for-industries', label: 'For Industries' },
+  { path: '/pricing', label: 'Pricing & Rates' },
+  { path: '/contact', label: 'Contact' },
+];
+
+
+// Sidebar Component
+const Sidebar = ({ navItems, roleLabel, onLogout, mobileOpen, onMobileClose }) => {
+  const location = useLocation();
+
+  return (
+    <>
+      {/* Mobile overlay */}
+      <div
+        className={`mobile-sidebar-overlay ${mobileOpen ? 'open' : ''}`}
+        onClick={onMobileClose}
+      />
+
+      <aside className={`app-sidebar ${mobileOpen ? 'open' : ''}`}>
+        {/* Logo */}
+        <Link to="/" className="sidebar-logo" onClick={onMobileClose}>
+          <div className="sidebar-logo-icon">
+            <LogoImage size={24} />
+          </div>
+          <div>
+            <span className="sidebar-logo-text">PulpChain</span>
+          </div>
+        </Link>
+        <div className="sidebar-tagline">Extracting Value from Every Sheet</div>
+
+        {/* User Badge */}
+        <div className="sidebar-user">
+          <div className="sidebar-user-icon">
+            {roleLabel.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <div className="sidebar-user-name">{roleLabel} Portal</div>
+            <div className="sidebar-user-role">{roleLabel}</div>
+          </div>
+        </div>
+
+        {/* Navigation Links */}
+        <nav className="sidebar-nav">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`sidebar-nav-link ${isActive ? 'active' : ''}`}
+                onClick={onMobileClose}
+              >
+                <Icon size={18} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Footer: Logout */}
+        <div className="sidebar-footer">
+          <button onClick={onLogout} className="sidebar-logout-btn">
+            <LogOut size={18} />
+            <span>Logout</span>
+          </button>
+        </div>
+      </aside>
+    </>
+  );
 };
+
+// Footer Component
+const Footer = () => (
+  <footer className="app-footer" style={{ padding: '40px 24px', textAlign: 'center', marginTop: 'auto' }}>
+    <p style={{ color: 'var(--text-muted)' }}>&copy; 2026 PulpChain Industrial Logistics. All rights reserved.</p>
+    <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '16px', flexWrap: 'wrap' }}>
+      <Link to="/about">About</Link>
+      <span style={{ color: 'var(--surface-border)' }}>&middot;</span>
+      <Link to="/pricing">Rates</Link>
+      <span style={{ color: 'var(--surface-border)' }}>&middot;</span>
+      <Link to="/faq">FAQ</Link>
+      <span style={{ color: 'var(--surface-border)' }}>&middot;</span>
+      <Link to="/contact">Contact</Link>
+      <span style={{ color: 'var(--surface-border)' }}>&middot;</span>
+      <Link to="/terms">Terms</Link>
+      <span style={{ color: 'var(--surface-border)' }}>&middot;</span>
+      <Link to="/privacy">Privacy</Link>
+      <span style={{ color: 'var(--surface-border)' }}>&middot;</span>
+      <Link to="/admin/login">Admin</Link>
+    </div>
+  </footer>
+);
 
 export const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     authService.logout();
@@ -32,143 +184,127 @@ export const Layout = ({ children }) => {
     }
   };
 
-  // Determine current navbar type
+  // Determine layout type
   const isAdminPath = location.pathname.startsWith('/admin') && location.pathname !== '/admin/login';
   const isSchoolPath = location.pathname.startsWith('/school');
   const isIndustryPath = location.pathname.startsWith('/industry') && location.pathname !== '/industry/login';
+  const isAuthenticated = isAdminPath || isSchoolPath || isIndustryPath;
 
+  // ── SIDEBAR LAYOUT (Authenticated) ──
+  if (isAuthenticated) {
+    let navItems = SCHOOL_NAV;
+    let roleLabel = 'School';
+    if (isIndustryPath) { navItems = INDUSTRY_NAV; roleLabel = 'Industry'; }
+    if (isAdminPath) { navItems = ADMIN_NAV; roleLabel = 'Admin'; }
+
+    return (
+      <div className="app-layout">
+        <Sidebar
+          navItems={navItems}
+          roleLabel={roleLabel}
+          onLogout={handleLogout}
+          mobileOpen={mobileMenuOpen}
+          onMobileClose={() => setMobileMenuOpen(false)}
+        />
+
+        <div className="app-main">
+          {/* Mobile header for sidebar toggle */}
+          <header className="public-header" style={{ display: 'none' }}>
+            <div className="public-header-inner">
+              <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+                <div className="sidebar-logo-icon"><LogoImage size={20} /></div>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem', color: 'var(--primary)' }}>PulpChain</span>
+              </Link>
+              <button
+                className="mobile-toggle"
+                style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', padding: '8px' }}
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            </div>
+          </header>
+
+          {/* Mobile-only visible header */}
+          <div style={{ display: 'none', padding: '12px 16px', borderBottom: '1px solid var(--surface-border)', alignItems: 'center', justifyContent: 'space-between', background: 'var(--glass-bg)' }} className="mobile-sidebar-header">
+            <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+              <div className="sidebar-logo-icon"><LogoImage size={18} /></div>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary)' }}>PulpChain</span>
+            </Link>
+            <button
+              className="mobile-toggle"
+              style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', padding: '8px' }}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+
+          <main className="app-main-content">
+            {children}
+          </main>
+          <Footer />
+        </div>
+
+        <style>{`
+          @media (max-width: 900px) {
+            .mobile-sidebar-header { display: flex !important; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // ── TOP NAVBAR LAYOUT (Public Pages) ──
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {/* Navigation Header */}
-      <header style={{
-        backgroundColor: 'var(--surface)',
-        borderBottom: '1px solid var(--surface-border)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        boxShadow: 'var(--shadow-sm)'
-      }}>
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          padding: '0 24px',
-          height: '72px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}>
-          <Link to="/" style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            textDecoration: 'none'
-          }}>
+      <header className="public-header" style={{ padding: '16px 24px', borderBottom: '1px solid var(--surface-border)', background: 'var(--glass-bg)', backdropFilter: 'blur(var(--glass-blur))', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div className="public-header-inner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: '1200px', margin: '0 auto' }}>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
             <div style={{
               background: 'var(--primary-light)',
               color: 'var(--primary)',
-              padding: '8px',
+              padding: '6px',
               borderRadius: 'var(--radius-md)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <Recycle size={24} />
+              <LogoImage size={32} />
             </div>
             <div>
               <span style={{
                 fontFamily: 'var(--font-display)',
                 fontWeight: 800,
                 fontSize: '1.4rem',
-                color: 'var(--text-main)',
+                color: 'var(--primary)',
                 letterSpacing: '-0.02em',
                 display: 'block',
                 lineHeight: 1
               }}>PulpChain</span>
-              <span style={{
-                fontSize: '0.7rem',
-                color: 'var(--text-muted)',
-                fontWeight: 600,
-                letterSpacing: '0.05em'
-              }}>CONVERT WASTE PAPER INTO VALUE</span>
             </div>
           </Link>
 
-          {/* Desktop Nav Items */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }} className="desktop-only">
-            {isAdminPath ? (
-              // Admin Navigation
-              <>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/admin/dashboard' ? 'btn-primary' : ''}`} to="/admin/dashboard">
-                  <Shield size={16} /> Dashboard
-                </Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/admin/schools' ? 'btn-primary' : ''}`} to="/admin/schools">Schools</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/admin/industries' ? 'btn-primary' : ''}`} to="/admin/industries">Industries</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/admin/pickups' ? 'btn-primary' : ''}`} to="/admin/pickups">Pickups</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/admin/orders' ? 'btn-primary' : ''}`} to="/admin/orders">Orders</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/admin/inventory' ? 'btn-primary' : ''}`} to="/admin/inventory">Inventory</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/admin/rates' ? 'btn-primary' : ''}`} to="/admin/rates">Rates</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/admin/sales' ? 'btn-primary' : ''}`} to="/admin/sales">Sales</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/admin/documents' ? 'btn-primary' : ''}`} to="/admin/documents">Documents</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/admin/finance' ? 'btn-primary' : ''}`} to="/admin/finance">Finance</Link>
-                <button onClick={handleLogout} className="btn btn-secondary btn-sm" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}>
-                  <LogOut size={16} /> Logout
-                </button>
-              </>
-            ) : isSchoolPath ? (
-              // School Navigation
-              <>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/school/dashboard' ? 'btn-primary' : ''}`} to="/school/dashboard">
-                  <Landmark size={16} /> Dashboard
-                </Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/school/request' ? 'btn-primary' : ''}`} to="/school/request">Request Pickup</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/school/pickups' ? 'btn-primary' : ''}`} to="/school/pickups">Pickups</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/school/payments' ? 'btn-primary' : ''}`} to="/school/payments">Payments</Link>
-                <button onClick={handleLogout} className="btn btn-secondary btn-sm" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}>
-                  <LogOut size={16} /> Logout
-                </button>
-              </>
-            ) : isIndustryPath ? (
-              // Industry Navigation
-              <>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/industry/dashboard' ? 'btn-primary' : ''}`} to="/industry/dashboard">
-                  <Building size={16} /> Dashboard
-                </Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/industry/request-order' ? 'btn-primary' : ''}`} to="/industry/request-order">Request Materials</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/industry/orders' ? 'btn-primary' : ''}`} to="/industry/orders">Orders</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/industry/invoices' ? 'btn-primary' : ''}`} to="/industry/invoices">Invoices</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/industry/payments' ? 'btn-primary' : ''}`} to="/industry/payments">Payments</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/industry/documents' ? 'btn-primary' : ''}`} to="/industry/documents">Documents</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/industry/contracts' ? 'btn-primary' : ''}`} to="/industry/contracts">Contracts</Link>
-                <button onClick={handleLogout} className="btn btn-secondary btn-sm" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}>
-                  <LogOut size={16} /> Logout
-                </button>
-              </>
-            ) : (
-              // Public Navigation
-              <>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/' ? 'btn-primary' : ''}`} to="/">Home</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/about' ? 'btn-primary' : ''}`} to="/about">About Us</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/marketplace' ? 'btn-primary' : ''}`} to="/marketplace">Marketplace</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/for-industries' ? 'btn-primary' : ''}`} to="/for-industries">For Industries</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/pricing' ? 'btn-primary' : ''}`} to="/pricing">Pricing & Rates</Link>
-                <Link className={`btn btn-secondary btn-sm ${location.pathname === '/contact' ? 'btn-primary' : ''}`} to="/contact">Contact</Link>
-                <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--surface-border)', margin: '0 4px', alignSelf: 'center' }} />
-                <Link className="btn btn-secondary btn-sm" to="/login">School Portal</Link>
-                <Link className="btn btn-secondary btn-sm" to="/industry/login">Industry Portal</Link>
-                <Link className="btn btn-primary btn-sm" to="/register">Register</Link>
-              </>
-            )}
+          {/* Desktop Nav */}
+          <nav style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap', overflowX: 'auto' }} className="desktop-only">
+            {PUBLIC_NAV.filter(item => item.path !== '/').map((item) => (
+              <Link
+                key={item.path}
+                className={`btn btn-sm ${location.pathname === item.path ? 'btn-primary' : 'btn-ghost'}`}
+                to={item.path}
+              >
+                {item.label}
+              </Link>
+            ))}
+            <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--surface-border)', margin: '0 8px', alignSelf: 'center' }} />
+            <Link className="btn btn-secondary btn-sm" to="/login">School Portal</Link>
+            <Link className="btn btn-secondary btn-sm" to="/industry/login">Industry Portal</Link>
+            <Link className="btn btn-primary btn-sm" to="/register">Register</Link>
           </nav>
 
-          {/* Mobile Menu Button */}
-          <button 
-            style={{
-              display: 'none',
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-main)',
-              cursor: 'pointer'
-            }}
+          {/* Mobile toggle */}
+          <button
+            style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer', padding: '8px', display: 'none' }}
             className="mobile-toggle"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
@@ -182,97 +318,33 @@ export const Layout = ({ children }) => {
         <div style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '12px',
-          padding: '24px',
-          backgroundColor: 'var(--surface)',
+          gap: '8px',
+          padding: '20px',
+          backgroundColor: 'var(--surface-solid)',
           borderBottom: '1px solid var(--surface-border)',
           position: 'sticky',
-          top: '72px',
+          top: 'var(--header-height)',
           zIndex: 49,
           boxShadow: 'var(--shadow-md)'
         }}>
-          {isAdminPath ? (
-            <>
-              <Link className="btn btn-secondary btn-full" to="/admin/dashboard" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
-              <Link className="btn btn-secondary btn-full" to="/admin/schools" onClick={() => setMobileMenuOpen(false)}>Schools</Link>
-              <Link className="btn btn-secondary btn-full" to="/admin/industries" onClick={() => setMobileMenuOpen(false)}>Industries</Link>
-              <Link className="btn btn-secondary btn-full" to="/admin/pickups" onClick={() => setMobileMenuOpen(false)}>Pickups</Link>
-              <Link className="btn btn-secondary btn-full" to="/admin/orders" onClick={() => setMobileMenuOpen(false)}>Orders</Link>
-              <Link className="btn btn-secondary btn-full" to="/admin/inventory" onClick={() => setMobileMenuOpen(false)}>Inventory</Link>
-              <Link className="btn btn-secondary btn-full" to="/admin/rates" onClick={() => setMobileMenuOpen(false)}>Rates</Link>
-              <Link className="btn btn-secondary btn-full" to="/admin/sales" onClick={() => setMobileMenuOpen(false)}>Sales</Link>
-              <Link className="btn btn-secondary btn-full" to="/admin/documents" onClick={() => setMobileMenuOpen(false)}>Documents</Link>
-              <Link className="btn btn-secondary btn-full" to="/admin/finance" onClick={() => setMobileMenuOpen(false)}>Finance</Link>
-              <button onClick={handleLogout} className="btn btn-danger btn-full">Logout</button>
-            </>
-          ) : isSchoolPath ? (
-            <>
-              <Link className="btn btn-secondary btn-full" to="/school/dashboard" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
-              <Link className="btn btn-secondary btn-full" to="/school/request" onClick={() => setMobileMenuOpen(false)}>Request Pickup</Link>
-              <Link className="btn btn-secondary btn-full" to="/school/pickups" onClick={() => setMobileMenuOpen(false)}>Pickups</Link>
-              <Link className="btn btn-secondary btn-full" to="/school/payments" onClick={() => setMobileMenuOpen(false)}>Payments</Link>
-              <button onClick={handleLogout} className="btn btn-danger btn-full">Logout</button>
-            </>
-          ) : isIndustryPath ? (
-            <>
-              <Link className="btn btn-secondary btn-full" to="/industry/dashboard" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
-              <Link className="btn btn-secondary btn-full" to="/industry/request-order" onClick={() => setMobileMenuOpen(false)}>Request Materials</Link>
-              <Link className="btn btn-secondary btn-full" to="/industry/orders" onClick={() => setMobileMenuOpen(false)}>Orders</Link>
-              <Link className="btn btn-secondary btn-full" to="/industry/invoices" onClick={() => setMobileMenuOpen(false)}>Invoices</Link>
-              <Link className="btn btn-secondary btn-full" to="/industry/payments" onClick={() => setMobileMenuOpen(false)}>Payments</Link>
-              <Link className="btn btn-secondary btn-full" to="/industry/documents" onClick={() => setMobileMenuOpen(false)}>Documents</Link>
-              <Link className="btn btn-secondary btn-full" to="/industry/contracts" onClick={() => setMobileMenuOpen(false)}>Contracts</Link>
-              <button onClick={handleLogout} className="btn btn-danger btn-full">Logout</button>
-            </>
-          ) : (
-            <>
-              <Link className="btn btn-secondary btn-full" to="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>
-              <Link className="btn btn-secondary btn-full" to="/about" onClick={() => setMobileMenuOpen(false)}>About Us</Link>
-              <Link className="btn btn-secondary btn-full" to="/marketplace" onClick={() => setMobileMenuOpen(false)}>Marketplace</Link>
-              <Link className="btn btn-secondary btn-full" to="/for-industries" onClick={() => setMobileMenuOpen(false)}>For Industries</Link>
-              <Link className="btn btn-secondary btn-full" to="/pricing" onClick={() => setMobileMenuOpen(false)}>Pricing & Rates</Link>
-              <Link className="btn btn-secondary btn-full" to="/contact" onClick={() => setMobileMenuOpen(false)}>Contact</Link>
-              <Link className="btn btn-secondary btn-full" to="/login" onClick={() => setMobileMenuOpen(false)}>School Portal</Link>
-              <Link className="btn btn-secondary btn-full" to="/industry/login" onClick={() => setMobileMenuOpen(false)}>Industry Portal</Link>
-              <Link className="btn btn-primary btn-full" to="/register" onClick={() => setMobileMenuOpen(false)}>Register</Link>
-            </>
-          )}
+          {PUBLIC_NAV.map((item) => (
+            <Link key={item.path} className="btn btn-secondary btn-full" to={item.path} onClick={() => setMobileMenuOpen(false)}>
+              {item.label}
+            </Link>
+          ))}
+          <div style={{ margin: '8px 0', borderTop: '1px solid var(--surface-border)' }} />
+          <Link className="btn btn-secondary btn-full" to="/login" onClick={() => setMobileMenuOpen(false)}>School Portal</Link>
+          <Link className="btn btn-secondary btn-full" to="/industry/login" onClick={() => setMobileMenuOpen(false)}>Industry Portal</Link>
+          <Link className="btn btn-primary btn-full" to="/register" onClick={() => setMobileMenuOpen(false)}>Register</Link>
         </div>
       )}
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <main style={{ flex: 1, maxWidth: '1200px', width: '100%', margin: '0 auto', padding: '32px 24px' }}>
         {children}
       </main>
 
-      {/* Footer */}
-      <footer style={{
-        backgroundColor: 'var(--surface)',
-        borderTop: '1px solid var(--surface-border)',
-        padding: '32px 24px',
-        marginTop: 'auto',
-        color: 'var(--text-muted)',
-        textAlign: 'center'
-      }}>
-        <p style={{ fontSize: '0.9rem' }}>&copy; 2026 PulpChain. Convert waste paper into value. All rights reserved.</p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '12px', fontSize: '0.8rem' }}>
-          <Link to="/about" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>About Us</Link>
-          <span>&middot;</span>
-          <Link to="/pricing" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Rates Sheet</Link>
-          <span>&middot;</span>
-          <Link to="/contact" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Contact</Link>
-          <span>&middot;</span>
-          <Link to="/admin/login" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Admin Login</Link>
-        </div>
-      </footer>
-
-      {/* Global Responsive Fix Styles */}
-      <style>{`
-        @media (max-width: 1000px) {
-          .desktop-only { display: none !important; }
-          .mobile-toggle { display: block !important; }
-        }
-      `}</style>
+      <Footer />
     </div>
   );
 };

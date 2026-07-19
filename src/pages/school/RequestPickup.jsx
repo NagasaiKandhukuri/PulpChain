@@ -2,10 +2,10 @@ import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { schoolService } from '../../services/school';
 import { adminService } from '../../services/admin';
-import { authService } from '../../services/auth';
+
 import { useAuth } from '../../contexts/AuthContext';
-import { Calendar, AlertTriangle, ShieldCheck } from 'lucide-react';
-import { formatINR } from '../../components/Layout';
+import { Calendar, AlertTriangle } from 'lucide-react';
+import { formatINR } from '../../utils/format';
 
 export const RequestPickup = () => {
   const navigate = useNavigate();
@@ -19,16 +19,19 @@ export const RequestPickup = () => {
   const [paperType, setPaperType] = React.useState('mixedPaper');
   const [estimatedWeight, setEstimatedWeight] = React.useState('');
   const [error, setError] = React.useState(null);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   // Validate configuration status
-  const ratesConfigured = rates && 
-                           rates.mixedPaper !== null && 
-                           rates.cardboard !== null && 
+  const ratesConfigured = rates &&
+                           rates.mixedPaper !== null &&
+                           rates.cardboard !== null &&
                            rates.whitePaper !== null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setError(null);
+    setIsSubmitting(true);
 
     const weight = parseFloat(estimatedWeight);
     if (isNaN(weight) || weight <= 0) {
@@ -47,6 +50,7 @@ export const RequestPickup = () => {
       navigate('/school/pickups');
     } catch (err) {
       setError(err.message);
+      setIsSubmitting(false);
     }
   };
 
@@ -117,6 +121,8 @@ export const RequestPickup = () => {
               value={estimatedWeight}
               onChange={(e) => setEstimatedWeight(e.target.value)}
               required
+              min={rates.moq || 1}
+              step="1"
             />
             {rates.moq !== null && (
               <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '6px' }}>
@@ -125,8 +131,8 @@ export const RequestPickup = () => {
             )}
           </div>
 
-          <button type="submit" className="btn btn-primary btn-full">
-            Submit Request <Calendar size={16} />
+          <button type="submit" className="btn btn-primary btn-full" disabled={isSubmitting}>
+            {isSubmitting ? 'Processing...' : <>Submit Request <Calendar size={16} /></>}
           </button>
         </form>
       </div>

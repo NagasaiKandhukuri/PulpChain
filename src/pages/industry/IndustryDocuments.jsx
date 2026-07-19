@@ -1,9 +1,9 @@
 import React from 'react';
 import { industryService } from '../../services/industry';
-import { authService } from '../../services/auth';
+
 import { useAuth } from '../../contexts/AuthContext';
-import { formatINR } from '../../components/Layout';
-import { FileText, Download, Scale, ArrowUpRight } from 'lucide-react';
+import { formatINR } from '../../utils/format';
+import { Download, Box } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from '../../lib/supabase';
@@ -46,7 +46,7 @@ export const IndustryDocuments = () => {
     try {
       const currentOrders = await Promise.resolve(industryService.getOrders(user.id));
       const order = currentOrders.find(o => o.id === invoice.orderId) || {};
-      
+
       let industryDetails = {};
       const { data } = await supabase
         .from('industries')
@@ -110,9 +110,9 @@ export const IndustryDocuments = () => {
       const gstAmount = invoice.gstAmount || 0;
       const grandTotal = invoice.amount;
 
-      const paperName = order.paperType === 'mixedPaper' ? 'Mixed Paper' 
-                      : order.paperType === 'cardboard' ? 'Cardboard' 
-                      : order.paperType === 'whitePaper' ? 'White Paper' 
+      const paperName = order.paperType === 'mixedPaper' ? 'Mixed Paper'
+                      : order.paperType === 'cardboard' ? 'Cardboard'
+                      : order.paperType === 'whitePaper' ? 'White Paper'
                       : 'General / Unsorted';
 
       const tableColumn = ["Paper Material Type", "Quantity (kg)", "Rate (per kg)", "Total (Excl. Tax)"];
@@ -198,9 +198,9 @@ export const IndustryDocuments = () => {
               <tbody>
                 {invoices.map((inv) => {
                   const order = orders.find(o => o.id === inv.orderId) || {};
-                  const paperName = order.paperType === 'mixedPaper' ? 'Mixed Paper' 
-                                  : order.paperType === 'cardboard' ? 'Cardboard' 
-                                  : order.paperType === 'whitePaper' ? 'White Paper' 
+                  const paperName = order.paperType === 'mixedPaper' ? 'Mixed Paper'
+                                  : order.paperType === 'cardboard' ? 'Cardboard'
+                                  : order.paperType === 'whitePaper' ? 'White Paper'
                                   : 'Recycled Fiber';
                   return (
                     <tr key={inv.id}>

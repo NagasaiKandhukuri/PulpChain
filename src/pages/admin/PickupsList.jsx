@@ -1,7 +1,7 @@
 import React from 'react';
 import { adminService } from '../../services/admin';
-import { formatINR } from '../../components/Layout';
-import { Calendar, CheckCircle2, ChevronRight, Play, Check, X, AlertTriangle, CreditCard, Download } from 'lucide-react';
+import { formatINR } from '../../utils/format';
+import { Calendar, CheckCircle2, Play, Check, X, CreditCard, Download } from 'lucide-react';
 import { generatePurchaseReceiptPDF } from '../../services/purchaseReceiptGenerator';
 
 export const PickupsList = () => {
@@ -9,15 +9,15 @@ export const PickupsList = () => {
   const [payments, setPayments] = React.useState([]);
   const [rates, setRates] = React.useState(null);
   const [activeTab, setActiveTab] = React.useState('logistics'); // 'logistics' | 'payments'
-  
+
   // Dialog States
   const [selectedPickup, setSelectedPickup] = React.useState(null);
   const [scheduledDate, setScheduledDate] = React.useState('');
-  
+
   const [actualWeight, setActualWeight] = React.useState('');
   const [completionPaperType, setCompletionPaperType] = React.useState('mixedPaper');
   const [completionRate, setCompletionRate] = React.useState('');
-  
+
   const [transactionRef, setTransactionRef] = React.useState('');
   const [selectedPayment, setSelectedPayment] = React.useState(null);
 
@@ -71,14 +71,14 @@ export const PickupsList = () => {
     setSelectedPickup(pickup);
     setActualWeight(pickup.estimatedWeight);
     setCompletionPaperType(pickup.paperType);
-    
+
     // Auto populate rate from configured rates if possible
     let currentRate = 0;
     if (rates) {
       currentRate = rates[pickup.paperType] || 0;
     }
     setCompletionRate(currentRate);
-    
+
     completeDialogRef.current?.showModal();
   };
 
@@ -93,7 +93,7 @@ export const PickupsList = () => {
     e.preventDefault();
     const weight = parseFloat(actualWeight);
     const rateVal = parseFloat(completionRate);
-    
+
     if (isNaN(weight) || weight <= 0) {
       alert('Please enter a valid weight.');
       return;

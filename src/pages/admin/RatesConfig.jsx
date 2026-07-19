@@ -1,6 +1,6 @@
 import React from 'react';
 import { adminService } from '../../services/admin';
-import { formatINR } from '../../components/Layout';
+import { formatINR } from '../../utils/format';
 import { ShieldCheck, Scale, Info, Save } from 'lucide-react';
 
 export const RatesConfig = () => {
@@ -14,6 +14,7 @@ export const RatesConfig = () => {
     moq: ''
   });
   const [success, setSuccess] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [currentRates, setCurrentRates] = React.useState(null);
 
   const loadRates = async () => {
@@ -49,7 +50,9 @@ export const RatesConfig = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setSuccess(false);
+    setIsSubmitting(true);
 
     try {
       await adminService.updateRates({
@@ -66,6 +69,8 @@ export const RatesConfig = () => {
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       alert(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -80,7 +85,7 @@ export const RatesConfig = () => {
         {/* Configuration Form */}
         <div className="card">
           <h3 style={{ fontSize: '1.25rem', marginBottom: '20px' }}>Update Rate Tables</h3>
-          
+
           {success && (
             <div style={{
               display: 'flex',
@@ -118,6 +123,7 @@ export const RatesConfig = () => {
                   value={rates.whitePaper}
                   onChange={handleChange}
                   required
+                  min="0.01"
                 />
               </div>
 
@@ -132,6 +138,7 @@ export const RatesConfig = () => {
                   value={rates.cardboard}
                   onChange={handleChange}
                   required
+                  min="0.01"
                 />
               </div>
 
@@ -146,6 +153,7 @@ export const RatesConfig = () => {
                   value={rates.mixedPaper}
                   onChange={handleChange}
                   required
+                  min="0.01"
                 />
               </div>
             </div>
@@ -169,6 +177,7 @@ export const RatesConfig = () => {
                   value={rates.whitePaperSell}
                   onChange={handleChange}
                   required
+                  min="0.01"
                 />
               </div>
 
@@ -183,6 +192,7 @@ export const RatesConfig = () => {
                   value={rates.cardboardSell}
                   onChange={handleChange}
                   required
+                  min="0.01"
                 />
               </div>
 
@@ -197,6 +207,7 @@ export const RatesConfig = () => {
                   value={rates.mixedPaperSell}
                   onChange={handleChange}
                   required
+                  min="0.01"
                 />
               </div>
             </div>
@@ -211,11 +222,13 @@ export const RatesConfig = () => {
                 value={rates.moq}
                 onChange={handleChange}
                 required
+                min="1"
+                step="1"
               />
             </div>
 
-            <button type="submit" className="btn btn-primary btn-full" style={{ marginTop: '12px' }}>
-              <Save size={16} /> Save Rate Configurations
+            <button type="submit" className="btn btn-primary btn-full" style={{ marginTop: '12px' }} disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : <><Save size={16} /> Save Rate Configurations</>}
             </button>
           </form>
         </div>

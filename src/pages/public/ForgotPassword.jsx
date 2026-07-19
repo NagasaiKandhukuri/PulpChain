@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Link } from 'react-router-dom';
 
@@ -14,11 +14,11 @@ export const ForgotPassword = () => {
     setMessage('');
     setError('');
     setIsSubmitting(true);
-    
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    
+
     if (error) {
       setError(error.message);
     } else {
@@ -33,16 +33,16 @@ export const ForgotPassword = () => {
       <div className="card" style={{ marginTop: '20px' }}>
         {message && <div style={{ color: 'green', marginBottom: '10px', fontSize: '0.9rem' }}>{message}</div>}
         {error && <div style={{ color: 'red', marginBottom: '10px', fontSize: '0.9rem' }}>{error}</div>}
-        
+
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           <div className="form-group">
             <label className="form-label">Email Address</label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               className="form-control"
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
-              required 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
             />
           </div>
           <button type="submit" className="btn btn-primary btn-full" disabled={isSubmitting}>

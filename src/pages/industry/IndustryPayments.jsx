@@ -1,9 +1,8 @@
 import React from 'react';
 import { industryService } from '../../services/industry';
-import { authService } from '../../services/auth';
 import { useAuth } from '../../contexts/AuthContext';
-import { formatINR } from '../../components/Layout';
-import { Landmark, CreditCard, Clock, FileCheck } from 'lucide-react';
+import { formatINR } from '../../utils/format';
+import { Landmark, Clock } from 'lucide-react';
 
 export const IndustryPayments = () => {
   const { user } = useAuth();
@@ -88,6 +87,9 @@ export const IndustryPayments = () => {
           <div>Account Number: <span style={{ color: 'var(--primary)' }}>40291039910</span></div>
           <div>IFSC Code: <span style={{ color: 'var(--primary)' }}>SBIN0004019</span></div>
           <div>Beneficiary: <span style={{ color: 'var(--primary)' }}>PulpChain Recycling Private Limited</span></div>
+        </div>
+        <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          Need payment assistance? Contact <a href="mailto:support@pulpchain.in" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>support@pulpchain.in</a>
         </div>
       </div>
 

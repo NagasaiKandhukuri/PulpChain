@@ -31,7 +31,7 @@ export const Contact = () => {
               </div>
               <div>
                 <strong style={{ display: 'block' }}>Operations Hotline</strong>
-                <span style={{ color: 'var(--text-muted)' }}>+91 (080) 555-0199</span>
+                <span style={{ color: 'var(--text-muted)' }}>+91 9508303814</span>
               </div>
             </div>
 
@@ -41,7 +41,7 @@ export const Contact = () => {
               </div>
               <div>
                 <strong style={{ display: 'block' }}>Support Email</strong>
-                <span style={{ color: 'var(--text-muted)' }}>ops@pulpchain.com</span>
+                <span style={{ color: 'var(--text-muted)' }}>mayankrajdto@gmail.com</span>
               </div>
             </div>
 
@@ -51,7 +51,7 @@ export const Contact = () => {
               </div>
               <div>
                 <strong style={{ display: 'block' }}>Recycling Logistics Center</strong>
-                <span style={{ color: 'var(--text-muted)' }}>4th Block, Koramangala, Bengaluru, Karnataka 560034</span>
+                <span style={{ color: 'var(--text-muted)' }}>Mayank Raj (Team PulpChain)</span>
               </div>
             </div>
           </div>

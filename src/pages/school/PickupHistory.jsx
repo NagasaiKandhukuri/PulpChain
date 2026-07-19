@@ -1,9 +1,9 @@
 import React from 'react';
 import { schoolService } from '../../services/school';
-import { authService } from '../../services/auth';
+
 import { useAuth } from '../../contexts/AuthContext';
-import { formatINR } from '../../components/Layout';
-import { Calendar, Trash2, ShieldAlert } from 'lucide-react';
+import { formatINR } from '../../utils/format';
+import { Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const SchoolPickups = () => {

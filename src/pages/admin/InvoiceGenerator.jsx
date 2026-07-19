@@ -2,8 +2,8 @@ import React from 'react';
 import { adminService } from '../../services/admin';
 import { financeService } from '../../services/finance';
 import { documentsService } from '../../services/documents';
-import { formatINR } from '../../components/Layout';
-import { Receipt, Download, FileText } from 'lucide-react';
+import { formatINR } from '../../utils/format';
+import { Receipt, Download,  } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { generatePurchaseReceiptPDF } from '../../services/purchaseReceiptGenerator';
@@ -21,8 +21,7 @@ export const InvoiceGenerator = () => {
   const [activeTab, setActiveTab] = React.useState('purchase'); // 'purchase' | 'sales'
   const [pickups, setPickups] = React.useState([]);
   const [sales, setSales] = React.useState([]);
-  const [schools, setSchools] = React.useState([]);
-  const [payments, setPayments] = React.useState([]);
+
   const [industryPayments, setIndustryPayments] = React.useState([]);
   const [documentsLog, setDocumentsLog] = React.useState([]);
   const [taxRate, setTaxRate] = React.useState(18); // GST 18%
@@ -33,12 +32,11 @@ export const InvoiceGenerator = () => {
     const allPickups = (Array.isArray(pickupsData) ? pickupsData : []).reverse();
     const completedOrPaid = allPickups.filter(p => p.status === 'completed' || p.status === 'paid');
     setPickups(completedOrPaid);
-    
+
     const salesData = await financeService.getSales();
     setSales(salesData.reverse());
-    const schoolsData = await adminService.getSchools();
-    setSchools(Array.isArray(schoolsData) ? schoolsData : []);
-    setPayments(await adminService.getPayments());
+    await adminService.getSchools();
+    await adminService.getPayments();
     setIndustryPayments(await adminService.getAllIndustryPayments());
     const fetchDocuments = async () => {
       setDocumentsLog(await documentsService.getDocuments());
@@ -95,29 +93,29 @@ export const InvoiceGenerator = () => {
       }
 
       const doc = new jsPDF();
-      
+
       // Header
       doc.setFontSize(22);
       doc.setTextColor(16, 185, 129); // Emerald Green
       doc.text("PulpChain", 14, 20);
-      
+
       doc.setFontSize(10);
       doc.setTextColor(100, 116, 139);
       doc.text("Convert waste paper into value.", 14, 25);
       doc.text("B2B Circular Economy Network", 14, 30);
-      
+
       // Invoice Meta title
       doc.setFontSize(18);
       doc.setTextColor(15, 23, 42);
       doc.text("COMMERCIAL INVOICE", 130, 20);
-      
+
       doc.setFontSize(10);
       doc.text(`Invoice No: ${invoiceNo}`, 130, 28);
       doc.text(`Date: ${new Date(sale.saleDate).toLocaleDateString()}`, 130, 34);
-      
+
       doc.setDrawColor(226, 232, 240);
       doc.line(14, 42, 196, 42);
-      
+
       // Buyer details
       doc.setFontSize(11);
       doc.setTextColor(100, 116, 139);
@@ -131,7 +129,7 @@ export const InvoiceGenerator = () => {
       doc.text(`Contact Person: ${industryDetails.contactPerson || 'N/A'}`, 14, 64);
       doc.text(`GSTIN: ${industryDetails.gstNumber || 'N/A'}`, 14, 69);
       doc.text(`Address: ${industryDetails.address || 'N/A'}`, 14, 74);
-      
+
       doc.line(14, 80, 196, 80);
 
       // Calculations
@@ -139,9 +137,9 @@ export const InvoiceGenerator = () => {
       const taxAmount = (subtotal * taxRate) / 100;
       const finalTotal = subtotal + taxAmount;
 
-      const paperName = sale.paperType === 'mixedPaper' ? 'Mixed Paper' 
-                      : sale.paperType === 'cardboard' ? 'Cardboard' 
-                      : sale.paperType === 'whitePaper' ? 'White Paper' 
+      const paperName = sale.paperType === 'mixedPaper' ? 'Mixed Paper'
+                      : sale.paperType === 'cardboard' ? 'Cardboard'
+                      : sale.paperType === 'whitePaper' ? 'White Paper'
                       : 'General / Unsorted';
 
       // Table columns & rows
@@ -168,13 +166,13 @@ export const InvoiceGenerator = () => {
       const finalY = doc.lastAutoTable.finalY + 15;
       doc.setFontSize(10);
       doc.setTextColor(100, 116, 139);
-      
+
       doc.text("Subtotal:", 135, finalY);
       doc.text(formatPDFCurrency(subtotal), 170, finalY);
-      
+
       doc.text(`Tax (${taxRate}% GST):`, 135, finalY + 6);
       doc.text(formatPDFCurrency(taxAmount), 170, finalY + 6);
-      
+
       doc.setFontSize(12);
       doc.setTextColor(15, 23, 42);
       doc.text("Final Total (INR):", 135, finalY + 14);
@@ -188,7 +186,21 @@ export const InvoiceGenerator = () => {
       doc.setTextColor(100, 116, 139);
       doc.text("Authorized Signature", 145, sigY + 5);
       doc.text("PulpChain Executive", 146, sigY + 10);
-      
+
+      // Wire Settlement Details
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      doc.text("Wire Settlement Details", 14, sigY - 5);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.text("Bank Name: State Bank of India", 14, sigY);
+      doc.text("Account Number: 40291039910", 14, sigY + 5);
+      doc.text("IFSC Code: SBIN0004019", 14, sigY + 10);
+      doc.text("Beneficiary: PulpChain Recycling Private Limited", 14, sigY + 15);
+
       doc.text("Thank you for your business. Let's make circular economy sustainable.", 14, 280);
 
       doc.save(`Invoice-${invoiceNo}.pdf`);
@@ -306,6 +318,9 @@ export const InvoiceGenerator = () => {
                 style={{ width: '80px', padding: '8px' }}
                 value={taxRate}
                 onChange={(e) => setTaxRate(Math.max(0, parseInt(e.target.value) || 0))}
+                min="0"
+                step="1"
+                required
               />
             </div>
           </div>
@@ -342,7 +357,7 @@ export const InvoiceGenerator = () => {
                       const subtotal = s.totalRevenue;
                       const gstVal = matchedPayment ? matchedPayment.gstAmount : 0;
                       const finalVal = matchedPayment ? matchedPayment.amount : subtotal;
-                      
+
                       return (
                         <tr key={s.id}>
                           <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{s.invoiceNumber}</td>

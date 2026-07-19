@@ -1,6 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { authService } from '../services/auth';
 
 const AuthContext = createContext({});
 
@@ -9,6 +8,24 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const fetchRole = async (userId) => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (data) {
+        setRole(data.role);
+      }
+    } catch (err) {
+      console.error("Error fetching role:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Get active session
@@ -38,25 +55,6 @@ export const AuthProvider = ({ children }) => {
       authListener?.subscription.unsubscribe();
     };
   }, []);
-
-  const fetchRole = async (userId) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userId)
-        .single();
-      
-      if (data) {
-        setRole(data.role);
-      }
-    } catch (err) {
-      console.error("Error fetching role:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <AuthContext.Provider value={{ user, session, role, loading }}>
       {children}
@@ -64,4 +62,5 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext);

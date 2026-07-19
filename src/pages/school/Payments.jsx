@@ -1,9 +1,9 @@
 import React from 'react';
 import { schoolService } from '../../services/school';
-import { authService } from '../../services/auth';
+
 import { useAuth } from '../../contexts/AuthContext';
-import { formatINR } from '../../components/Layout';
-import { Landmark, PiggyBank, Receipt, Download } from 'lucide-react';
+import { formatINR } from '../../utils/format';
+import { PiggyBank, Receipt, Download } from 'lucide-react';
 import { generatePurchaseReceiptPDF } from '../../services/purchaseReceiptGenerator';
 
 export const SchoolPayments = () => {

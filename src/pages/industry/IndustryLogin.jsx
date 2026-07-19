@@ -1,7 +1,9 @@
 import React from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { authService } from '../../services/auth';
-import { ShieldAlert, Building, Lock, CheckCircle } from 'lucide-react';
+import { ShieldAlert, Building, Lock } from 'lucide-react';
+import { RegistrationSuccess } from '../../components/RegistrationSuccess';
+
 
 export const IndustryLogin = () => {
   const navigate = useNavigate();
@@ -18,10 +20,37 @@ export const IndustryLogin = () => {
     setIsSubmitting(true);
 
     try {
-      await authService.loginIndustry(email, password);
+      const response = await authService.loginIndustry(email, password);
+
+      if (response && !response.success) {
+        switch (response.code) {
+          case 'EMAIL_NOT_VERIFIED':
+            setError('Your email is not verified. Please verify your email before signing in.');
+            break;
+          case 'UNAUTHORIZED':
+            setError('Unauthorized access. This account is not a registered industry.');
+            break;
+          case 'REGISTRATION_INCOMPLETE':
+            navigate('/complete-registration?role=industry');
+            return;
+          case 'ACCOUNT_REJECTED':
+            setError('Your account registration was rejected by the administrator.');
+            break;
+          case 'ACCOUNT_PENDING':
+            setError('Your account is awaiting administrator approval.');
+            break;
+          default:
+            setError('An unknown error occurred.');
+        }
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Success, route to industry dashboard
       navigate('/industry/dashboard');
     } catch (err) {
-      setError(err.message);
+      console.error(err);
+      setError('Invalid login credentials. Please try again.');
       setIsSubmitting(false);
     }
   };
@@ -38,21 +67,7 @@ export const IndustryLogin = () => {
 
       <div className="card">
         {location.state?.message && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '12px',
-            backgroundColor: '#dcfce7',
-            color: '#166534',
-            padding: '16px',
-            borderRadius: 'var(--radius-md)',
-            marginBottom: '20px',
-            fontSize: '0.9rem',
-            fontWeight: 500
-          }}>
-            <CheckCircle size={20} style={{ flexShrink: 0, marginTop: '2px' }} />
-            <span>{location.state.message}</span>
-          </div>
+          <RegistrationSuccess message={location.state.message} />
         )}
 
         {error && (
@@ -107,6 +122,8 @@ export const IndustryLogin = () => {
             {isSubmitting ? 'Logging in...' : <>Log In to Portal <Lock size={16} /></>}
           </button>
         </form>
+
+
       </div>
 
       <div style={{ textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-muted)' }}>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { financeService } from '../../services/finance';
-import { formatINR } from '../../components/Layout';
+import { formatINR } from '../../utils/format';
 import { Bar, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -13,7 +13,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { DollarSign, Landmark, Weight, Award, Info, TrendingUp, BarChart2 } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 // Register ChartJS modules
 ChartJS.register(

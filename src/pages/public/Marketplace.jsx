@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { adminService } from '../../services/admin';
-import { financeService } from '../../services/finance';
-import { formatINR } from '../../components/Layout';
-import { LayoutGrid, AlertCircle, Scale, ShieldCheck, Users, ShoppingBag } from 'lucide-react';
+import { formatINR } from '../../utils/format';
+import { AlertCircle } from 'lucide-react';
 
 export const Marketplace = () => {
   const [rates, setRates] = useState(null);
@@ -34,9 +33,9 @@ export const Marketplace = () => {
   if (loading) return <div>Loading marketplace data...</div>;
 
   // Check if selling rates are configured
-  const isConfigured = rates && 
-                       rates.mixedPaperSell != null && 
-                       rates.cardboardSell != null && 
+  const isConfigured = rates &&
+                       rates.mixedPaperSell != null &&
+                       rates.cardboardSell != null &&
                        rates.whitePaperSell != null;
 
   // Availability status helpers

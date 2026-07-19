@@ -3,15 +3,12 @@ import { supabase } from '../lib/supabase';
 export const schoolService = {
   // Request a pickup
   requestPickup: async (schoolId, paperType, estimatedWeight) => {
-    let schoolName = 'Unknown School';
-    
     const { data, error: schoolError } = await supabase
       .from('schools')
       .select('name')
       .eq('id', schoolId)
       .single();
     if (schoolError || !data) throw new Error('School not found.');
-    schoolName = data.name;
 
     const { data: newPickup, error } = await supabase.from('pickups').insert([{
       school_id: schoolId,
@@ -19,7 +16,7 @@ export const schoolService = {
       estimated_weight: parseFloat(estimatedWeight),
       status: 'pending'
     }]).select().single();
-    
+
     if (error) throw new Error(error.message);
     return newPickup;
   },
@@ -31,11 +28,12 @@ export const schoolService = {
       .select(`*, schools:school_id (name)`)
       .eq('school_id', schoolId)
       .order('request_date', { ascending: false });
-      
+
     if (error) throw new Error(error.message);
-    
+
     // Transform snake_case to camelCase
-    return data.map(p => ({
+    const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+    return uniqueData.map(p => ({
       id: p.id,
       schoolId: p.school_id,
       schoolName: p.schools?.name || 'Unknown School',
@@ -60,12 +58,13 @@ export const schoolService = {
       .eq('school_id', schoolId)
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
-    
+
     if (error) {
       console.error('Error fetching payments:', error);
       return [];
     }
-    return data.map(p => ({
+    const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+    return uniqueData.map(p => ({
       id: p.id,
       schoolId: p.school_id,
       pickupId: p.pickup_id,
@@ -78,16 +77,16 @@ export const schoolService = {
 
   // Get dashboard metrics for school
   getDashboardData: async (schoolId) => {
-    let schoolPickups = [];
+    let schoolPickups;
     try {
       schoolPickups = await schoolService.getPickups(schoolId);
-    } catch(e) {
+    } catch {
       schoolPickups = [];
     }
-    let schoolPayments = [];
+    let schoolPayments;
     try {
       schoolPayments = await schoolService.getPayments(schoolId);
-    } catch(e) {
+    } catch {
       schoolPayments = [];
     }
 

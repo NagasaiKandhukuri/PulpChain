@@ -1,10 +1,10 @@
 import React from 'react';
 import { industryService } from '../../services/industry';
-import { authService } from '../../services/auth';
+
 import { useAuth } from '../../contexts/AuthContext';
 import { documentsService } from '../../services/documents';
-import { formatINR } from '../../components/Layout';
-import { FileText, Download, FileSpreadsheet, Scale } from 'lucide-react';
+import { formatINR } from '../../utils/format';
+import { Download, FileSpreadsheet } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { supabase } from '../../lib/supabase';
@@ -55,7 +55,7 @@ export const IndustryInvoices = () => {
 
       const orders = await Promise.resolve(industryService.getOrders(user.id));
       const order = orders.find(o => o.id === invoice.orderId) || {};
-      
+
       let industryDetails = {};
       const { data } = await supabase
         .from('industries')
@@ -121,9 +121,9 @@ export const IndustryInvoices = () => {
       const gstAmount = invoice.gstAmount || 0;
       const grandTotal = invoice.amount;
 
-      const paperName = order.paperType === 'mixedPaper' ? 'Mixed Paper' 
-                      : order.paperType === 'cardboard' ? 'Cardboard' 
-                      : order.paperType === 'whitePaper' ? 'White Paper' 
+      const paperName = order.paperType === 'mixedPaper' ? 'Mixed Paper'
+                      : order.paperType === 'cardboard' ? 'Cardboard'
+                      : order.paperType === 'whitePaper' ? 'White Paper'
                       : 'General / Unsorted';
 
       const tableColumn = ["Paper Material Type", "Quantity (kg)", "Rate (per kg)", "Total (Excl. Tax)"];
@@ -167,6 +167,20 @@ export const IndustryInvoices = () => {
       doc.setTextColor(100, 116, 139);
       doc.text("Authorized Signature", 145, sigY + 5);
       doc.text("PulpChain Finance Team", 143, sigY + 10);
+
+      // Wire Settlement Details
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      doc.text("Wire Settlement Details", 14, sigY - 5);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(100, 116, 139);
+      doc.text("Bank Name: State Bank of India", 14, sigY);
+      doc.text("Account Number: 40291039910", 14, sigY + 5);
+      doc.text("IFSC Code: SBIN0004019", 14, sigY + 10);
+      doc.text("Beneficiary: PulpChain Recycling Private Limited", 14, sigY + 15);
 
       doc.text("Thank you for partnering with PulpChain. Sustainable recycling certified.", 14, 280);
 

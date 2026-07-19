@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { schoolService } from '../../services/school';
 import { supabase } from '../../lib/supabase';
 import { adminService } from '../../services/admin';
-import { authService } from '../../services/auth';
+
 import { useAuth } from '../../contexts/AuthContext';
-import { formatINR } from '../../components/Layout';
+import { formatINR } from '../../utils/format';
 import { Scale, Milestone, PiggyBank, Calendar, Clock, AlertTriangle, ShieldCheck, ArrowUpRight } from 'lucide-react';
 
 export const SchoolDashboard = () => {
@@ -34,7 +34,7 @@ export const SchoolDashboard = () => {
         .then(({ data }) => {
           if (data) setSchool(data);
         });
-        
+
       schoolService.getDashboardData(user.id)
         .then(setMetrics)
         .catch(console.error);
@@ -42,9 +42,9 @@ export const SchoolDashboard = () => {
   }, [user?.id]);
 
   // Check if rates are configured
-  const ratesConfigured = rates && 
-                           rates.mixedPaper !== null && 
-                           rates.cardboard !== null && 
+  const ratesConfigured = rates &&
+                           rates.mixedPaper !== null &&
+                           rates.cardboard !== null &&
                            rates.whitePaper !== null;
 
   return (

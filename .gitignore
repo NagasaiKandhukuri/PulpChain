@@ -12,3 +12,6 @@ dist/
 coverage/
 
 *.log
+
+playwright-report/
+test-results/

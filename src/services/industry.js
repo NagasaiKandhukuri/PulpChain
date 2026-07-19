@@ -6,14 +6,13 @@ import { adminService } from './admin';
 export const industryService = {
   // Place an order request
   requestOrder: async (industryId, paperType, quantity, deliveryAddress, requiredDeliveryDate, additionalNotes) => {
-    let companyName = 'Unknown Industry';
     const { data, error } = await supabase
       .from('industries')
       .select('company_name')
       .eq('id', industryId)
       .single();
     if (error || !data) throw new Error('Industry profile not found.');
-    companyName = data.company_name;
+    const companyName = data.company_name;
 
     const qty = parseFloat(quantity);
     if (isNaN(qty) || qty <= 0) throw new Error('Please enter a valid quantity.');
@@ -57,7 +56,7 @@ export const industryService = {
       additional_notes: additionalNotes,
       status: 'requested',
     }]).select().single();
-    
+
     if (orderError) throw new Error(orderError.message);
 
     return {
@@ -88,10 +87,11 @@ export const industryService = {
       .select(`*, industries(company_name), industry_payments(amount)`)
       .eq('industry_id', industryId)
       .order('created_at', { ascending: false });
-      
+
     if (error) throw new Error(error.message);
-    
-    return data.map(o => ({
+
+    const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+    return uniqueData.map(o => ({
       id: o.id,
       industryId: o.industry_id,
       industryName: o.industries?.company_name || 'Unknown Industry',
@@ -116,14 +116,13 @@ export const industryService = {
 
   // Request recurring monthly contracts
   requestContract: async (industryId, paperType, monthlyVolumeKg, contractDurationMonths, expectedRate) => {
-    let companyName = 'Unknown Industry';
     const { data, error } = await supabase
       .from('industries')
       .select('company_name')
       .eq('id', industryId)
       .single();
     if (error || !data) throw new Error('Industry profile not found.');
-    companyName = data.company_name;
+    const companyName = data.company_name;
 
     const { data: newContract, error: contractError } = await supabase.from('industry_contracts').insert([{
       industry_id: industryId,
@@ -158,10 +157,11 @@ export const industryService = {
       .select('*')
       .eq('industry_id', industryId)
       .order('created_at', { ascending: false });
-      
+
     if (error) throw new Error(error.message);
-    
-    return data.map(c => ({
+
+    const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+    return uniqueData.map(c => ({
       id: c.id,
       industryId: c.industry_id,
       industryName: c.industry_name,
@@ -178,7 +178,7 @@ export const industryService = {
   // Get dashboard data summary
   getDashboardData: (industryId, ordersArray) => {
     const orders = ordersArray || [];
-    
+
     const completedOrders = orders.filter(o => o.status === 'completed');
     const pendingOrders = orders.filter(o => !['completed', 'cancelled'].includes(o.status));
 
@@ -205,8 +205,9 @@ export const industryService = {
       .eq('industry_id', industryId)
       .order('created_at', { ascending: false });
     if (error) throw new Error(error.message);
-    
-    return data.map(p => ({
+
+    const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+    return uniqueData.map(p => ({
       id: p.id,
       saleId: p.sale_id,
       orderId: p.order_id,

@@ -1,14 +1,14 @@
 import React from 'react';
 import { industryService } from '../../services/industry';
-import { authService } from '../../services/auth';
+import {  } from '../../services/auth';
 import { useAuth } from '../../contexts/AuthContext';
-import { formatINR } from '../../components/Layout';
-import { FileText, PlusCircle, CheckCircle, ShieldAlert } from 'lucide-react';
+import { formatINR } from '../../utils/format';
+import { FileText, PlusCircle } from 'lucide-react';
 
 export const IndustryContracts = () => {
   const { user } = useAuth();
   const [contracts, setContracts] = React.useState([]);
-  
+
   // Form fields
   const [paperType, setPaperType] = React.useState('mixedPaper');
   const [monthlyVolume, setMonthlyVolume] = React.useState('');

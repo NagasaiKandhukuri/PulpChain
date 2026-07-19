@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { adminService } from '../../services/admin';
-import { formatINR } from '../../components/Layout';
-import { Box, Play, Check, X, ShieldAlert, Award, Truck, ShieldCheck, ChevronRight, Clock } from 'lucide-react';
+import { formatINR } from '../../utils/format';
+import { Box, Check, X, Award, Truck, ShieldCheck, ChevronRight,  } from 'lucide-react';
 
 export const ManageOrders = () => {
   const [orders, setOrders] = React.useState([]);
@@ -62,13 +62,13 @@ export const ManageOrders = () => {
         {stages.map((stage, idx) => {
           const isDone = idx <= currentStageIndex;
           const isCurrent = stage.key === o.status;
-          
+
           return (
             <React.Fragment key={stage.key}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '40px' }}>
-                <span style={{ 
-                  fontSize: '0.65rem', 
-                  fontWeight: 700, 
+                <span style={{
+                  fontSize: '0.65rem',
+                  fontWeight: 700,
                   color: isCurrent ? 'var(--primary)' : isDone ? 'var(--text-main)' : 'var(--text-muted)',
                   textTransform: 'uppercase'
                 }}>{stage.label}</span>
@@ -231,15 +231,15 @@ export const ManageOrders = () => {
                           <span style={{ fontSize: '0.85rem', color: 'var(--success)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             <ShieldCheck size={14} /> Order Fulfilled
                           </span>
-                          
+
                           {/* Invoice & Payment Operations B2B */}
                           {(() => {
                             const payment = payments.find(p => p.orderId === o.id);
-                            
+
                             if (!payment) {
                               return <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No payment record</span>;
                             }
-                            
+
                             return (
                               <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
                                 <Link to="/admin/documents" className="btn btn-secondary btn-sm" style={{ padding: '4px 8px', fontSize: '0.75rem' }}>

@@ -2,10 +2,10 @@ import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { industryService } from '../../services/industry';
 import { adminService } from '../../services/admin';
-import { authService } from '../../services/auth';
+
 import { useAuth } from '../../contexts/AuthContext';
-import { formatINR } from '../../components/Layout';
-import { ShoppingCart, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { formatINR } from '../../utils/format';
+import { ShoppingCart, AlertTriangle } from 'lucide-react';
 import { FINANCE_CONFIG } from '../../lib/constants';
 
 export const RequestOrder = () => {
@@ -19,6 +19,7 @@ export const RequestOrder = () => {
   const [deliveryDate, setDeliveryDate] = React.useState('');
   const [notes, setNotes] = React.useState('');
   const [error, setError] = React.useState(null);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   // Auto populate school's business address if needed
   // Auto populate school's business address if needed
@@ -44,14 +45,16 @@ export const RequestOrder = () => {
     if (user?.id) loadAddress();
   }, [user?.id]);
 
-  const ratesConfigured = rates && 
-                         rates.mixedPaperSell !== null && 
-                         rates.cardboardSell !== null && 
+  const ratesConfigured = rates &&
+                         rates.mixedPaperSell !== null &&
+                         rates.cardboardSell !== null &&
                          rates.whitePaperSell !== null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setError(null);
+    setIsSubmitting(true);
 
     const qty = parseFloat(quantity);
     if (isNaN(qty) || qty <= 0) {
@@ -71,6 +74,7 @@ export const RequestOrder = () => {
       navigate('/industry/orders');
     } catch (err) {
       setError(err.message);
+      setIsSubmitting(false);
     }
   };
 
@@ -150,6 +154,8 @@ export const RequestOrder = () => {
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               required
+              min={rates.moq || 1}
+              step="1"
             />
             {rates.moq !== null && (
               <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '6px' }}>
@@ -200,7 +206,7 @@ export const RequestOrder = () => {
               const baseAmount = (parseFloat(quantity) || 0) * selectedPrice;
               const gstAmount = baseAmount * (FINANCE_CONFIG.GST_RATE / 100);
               const totalPayable = baseAmount + gstAmount;
-              
+
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)' }}>
@@ -220,8 +226,8 @@ export const RequestOrder = () => {
             })()}
           </div>
 
-          <button type="submit" className="btn btn-primary btn-full">
-            Submit Order Request <ShoppingCart size={16} />
+          <button type="submit" className="btn btn-primary btn-full" disabled={isSubmitting}>
+            {isSubmitting ? 'Processing...' : <>Submit Order Request <ShoppingCart size={16} /></>}
           </button>
         </form>
       </div>

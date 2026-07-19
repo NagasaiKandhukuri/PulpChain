@@ -1,9 +1,9 @@
 import React from 'react';
 import { adminService } from '../../services/admin';
 import { financeService } from '../../services/finance';
-import { formatINR } from '../../components/Layout';
-import { Scale, Milestone, Weight, History, ArrowDownLeft, ArrowUpRight, TrendingUp, BarChart2 } from 'lucide-react';
-import { Bar, Line } from 'react-chartjs-2';
+import { formatINR } from '../../utils/format';
+import { Scale, History, ArrowDownLeft, ArrowUpRight, BarChart2 } from 'lucide-react';
+import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -50,9 +50,9 @@ export const InventoryDashboard = () => {
     }).finally(() => setLoading(false));
   }, []);
 
-  const ratesConfigured = rates && 
-                         rates.mixedPaperSell !== null && 
-                         rates.cardboardSell !== null && 
+  const ratesConfigured = rates &&
+                         rates.mixedPaperSell !== null &&
+                         rates.cardboardSell !== null &&
                          rates.whitePaperSell !== null;
 
   // Stock status helper
@@ -82,11 +82,12 @@ export const InventoryDashboard = () => {
   const soldTrendData = sortedDays.map(d => trendsMap[d].sold);
 
   // Compute a simple running inventory balance trend
-  let currentRunningStock = 0;
-  const balanceTrendData = sortedDays.map(d => {
-    currentRunningStock += (trendsMap[d].procured - trendsMap[d].sold);
-    return Math.max(0, currentRunningStock);
-  });
+  const balanceTrendData = sortedDays.reduce((acc, d) => {
+    const lastVal = acc.length > 0 ? acc[acc.length - 1] : 0;
+    const newVal = lastVal + (trendsMap[d].procured - trendsMap[d].sold);
+    acc.push(Math.max(0, newVal));
+    return acc;
+  }, []);
 
   const chartLabels = sortedDays.length > 0 ? sortedDays : ['No Data'];
   const pData = procuredTrendData.length > 0 ? procuredTrendData : [0];
